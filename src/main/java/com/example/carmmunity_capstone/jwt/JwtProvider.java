@@ -40,6 +40,22 @@ public class JwtProvider {
                 .compact();
     }
 
+    // 테스트용 - 30일 유효한 토큰 생성
+    public String createLongLivedToken(String userId, String role) {
+        Date now = new Date();
+        long thirtyDaysInMillis = 1000L * 60 * 60 * 24 * 30; // 30일
+        Date expiry = new Date(now.getTime() + thirtyDaysInMillis);
+
+        return Jwts.builder()
+                .setSubject(String.valueOf(userId))
+                .claim("role", role)
+                .setIssuedAt(now)
+                .setExpiration(expiry)
+                .signWith(SignatureAlgorithm.HS256, encodedSecret)
+                .compact();
+    }
+
+
 
     // userId 추출
     public String extractUserId(String token) {

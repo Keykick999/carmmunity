@@ -1,11 +1,13 @@
 package com.example.carmmunity_capstone.dto;
 
 import com.example.carmmunity_capstone.domain.User;
+import lombok.Getter;
 import lombok.Setter;
 
 
 @Setter
-public class CommentSearchRequest {
+@Getter
+public class CommentSearchResponse {
     private Integer commentId;
     private String commentContent;
     private Integer totalLike = 0;

@@ -53,6 +53,14 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.FORBIDDEN)
                 .body(e.getMessage());
     }
+
+    // 회원 튜닝 차량 개수 초과
+    @ExceptionHandler(TooManyUserCarsException.class)
+    public ResponseEntity<String> handleTooManyUserCars(TooManyUserCarsException ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ex.getMessage());
+    }
 }
 
 

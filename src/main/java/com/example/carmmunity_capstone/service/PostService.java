@@ -4,9 +4,7 @@ import com.example.carmmunity_capstone.domain.Post;
 import com.example.carmmunity_capstone.domain.PostLike;
 import com.example.carmmunity_capstone.domain.PostLikeId;
 import com.example.carmmunity_capstone.domain.User;
-import com.example.carmmunity_capstone.dto.PostLikeRequest;
-import com.example.carmmunity_capstone.dto.PostLikeResponse;
-import com.example.carmmunity_capstone.dto.PostRequest;
+import com.example.carmmunity_capstone.dto.*;
 import com.example.carmmunity_capstone.exception.PostNotFoundException;
 import com.example.carmmunity_capstone.exception.UnAuthorizedAccessException;
 import com.example.carmmunity_capstone.repository.PostLikeRepository;
@@ -14,6 +12,7 @@ import com.example.carmmunity_capstone.repository.PostRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -60,16 +59,17 @@ public class PostService {
 
     // 게시글 전체 조회
     @Transactional(readOnly = true)
-    public Page<Post> findAll(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        return postRepository.findAll(pageable);
+    public Page<PostSearchResponse> findAll(int page, int size, PostOrderBy orderBy, Sort.Direction direction) {
+        Sort sort = Sort.by(direction, orderBy.getField());
+        Pageable pageable = PageRequest.of(page, size, sort);
+        return postRepository.findAllPosts(pageable);
     }
 
 
     // 게시글 id로 조회
     @Transactional(readOnly = true)
-    public Post findById(int postId) {
-        return postRepository.findById(postId).orElseThrow(() -> new PostNotFoundException("해당 게시글을 찾을 수 없습니다"));
+    public PostSearchResponse findById(int postId) {
+        return postRepository.findPostById(postId).orElseThrow(() -> new PostNotFoundException("해당 게시글을 찾을 수 없습니다"));
     }
 
 

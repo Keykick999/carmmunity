@@ -1,5 +1,17 @@
 package com.example.carmmunity_capstone.dto;
 
 public enum CommentOrderBy {
-    CREATED_AT, UPDATED_AT, LIKE_COUNT
+    CREATEDAT("createdAt"),
+    UPDATEDAT("updatedAt"),
+    LIKECOUNT("totalLike");
+
+    private final String field;
+
+    CommentOrderBy(String field) {
+        this.field = field;
+    }
+
+    public String getField() {
+        return field;
+    }
 }

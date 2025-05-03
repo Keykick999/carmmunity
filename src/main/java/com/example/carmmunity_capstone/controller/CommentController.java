@@ -31,12 +31,12 @@ public class CommentController {
 
     // 게시글 id로 댓글 조회
     @GetMapping
-    public ResponseEntity<Page<CommentSearchRequest>> getCommentsByPostId(@RequestHeader(value = "Authorization", required = false) String authorizationHeader,
-                                                                          @RequestParam("parentCommentId") Integer parentCommentId,
-                                                                          @RequestParam(defaultValue = "0") int page,
-                                                                          @RequestParam(defaultValue = "10") int size,
-                                                                          @RequestParam(defaultValue = "CREATED_AT") CommentOrderBy orderBy,
-                                                                          @RequestParam(defaultValue = "DESC")Sort.Direction direction) {
+    public ResponseEntity<Page<CommentSearchResponse>> getCommentsByPostId(@RequestHeader(value = "Authorization", required = false) String authorizationHeader,
+                                                                           @RequestParam("parentCommentId") Integer parentCommentId,
+                                                                           @RequestParam(defaultValue = "0") int page,
+                                                                           @RequestParam(defaultValue = "10") int size,
+                                                                           @RequestParam(defaultValue = "CREATEDAT") CommentOrderBy orderBy,
+                                                                           @RequestParam(defaultValue = "DESC")Sort.Direction direction) {
         return ResponseEntity.ok(commentService.getComments(authorizationHeader, parentCommentId, page, size, orderBy, direction));
     }
 

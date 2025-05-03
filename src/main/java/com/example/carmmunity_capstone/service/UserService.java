@@ -26,6 +26,7 @@ public class UserService {
         return userRepository.findById(userId).orElseThrow(() -> new InvalidTokenException("유효하지 않은 토큰입니다."));
     }
 
+
     public Optional<User> getUserIfAuthenticated(String authorizationHeader) {
         try {
             if (authorizationHeader == null || authorizationHeader.isBlank()) {

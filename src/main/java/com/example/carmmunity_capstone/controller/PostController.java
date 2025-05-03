@@ -1,11 +1,9 @@
 package com.example.carmmunity_capstone.controller;
 
-import com.example.carmmunity_capstone.domain.Post;
-import com.example.carmmunity_capstone.dto.PostLikeRequest;
-import com.example.carmmunity_capstone.dto.PostLikeResponse;
-import com.example.carmmunity_capstone.dto.PostRequest;
+import com.example.carmmunity_capstone.dto.*;
 import com.example.carmmunity_capstone.service.PostService;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +21,7 @@ public class PostController {
 
 
     // 게시글 작성
-    @PostMapping("/posts")
+    @PostMapping
     public ResponseEntity<String> save(@RequestHeader(value = "Authorization", required = true)  String authorizationHeader,
                                        @RequestPart("postData") PostRequest postSaveRequest,
                                        @RequestPart(value = "postImage", required = false) MultipartFile postImage) {
@@ -34,15 +32,17 @@ public class PostController {
 
     // 게시글 전체 조회
     @GetMapping
-    public ResponseEntity<Page<Post>> findAll(@RequestParam(value = "page", defaultValue = "0") int page,
-                                              @RequestParam(value = "size", defaultValue = "10") int size) {
-        return ResponseEntity.ok(postService.findAll(page, size));
+    public ResponseEntity<Page<PostSearchResponse>> findAll(@RequestParam(value = "page", defaultValue = "0") int page,
+                                              @RequestParam(value = "size", defaultValue = "10") int size,
+                                              @RequestParam(defaultValue = "CREATEDAT") PostOrderBy orderBy,
+                                              @RequestParam(defaultValue="DESC") Sort.Direction direction) {
+        return ResponseEntity.ok(postService.findAll(page, size, orderBy, direction));
     }
 
 
     // 게시글 단일 조회
     @GetMapping("/{postId}")
-    public ResponseEntity<Post> findById(@PathVariable("postId") int postId) {
+    public ResponseEntity<PostSearchResponse> findById(@PathVariable("postId") int postId) {
         return ResponseEntity.ok(postService.findById(postId));
     }
 

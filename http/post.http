@@ -1,0 +1,16 @@
+### @env local
+
+POST {{host}}/posts
+Authorization: {{access_token}}
+Content-Type: multipart/form-data; boundary=boundary123
+
+--boundary123
+Content-Disposition: form-data; name="postData"
+Content-Type: application/json
+
+{
+  "title": "test title",
+  "content": "test content",
+  "postType": "FREE"
+}
+--boundary123--

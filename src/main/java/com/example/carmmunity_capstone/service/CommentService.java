@@ -68,16 +68,16 @@ public class CommentService {
 
     // 게시글 id로 댓글 조회
     @Transactional(readOnly = true)
-    public Page<CommentSearchRequest> getComments(String authorizationHeader, Integer parentCommentId, int page, int size, CommentOrderBy orderBy, Sort.Direction direction) {
+    public Page<CommentSearchResponse> getComments(String authorizationHeader, Integer parentCommentId, int page, int size, CommentOrderBy orderBy, Sort.Direction direction) {
         Optional<User> user = userService.getUserIfAuthenticated(authorizationHeader);
 
-        Sort sort = Sort.by(direction, orderBy.name().toLowerCase());
+        Sort sort = Sort.by(direction, orderBy.getField());
         Pageable pageable = PageRequest.of(page, size, sort);
 
         Page<Comment> comments = commentRepository.findByParentId(parentCommentId, pageable);
 
         return comments.map(comment -> {
-            CommentSearchRequest dto = new CommentSearchRequest();
+            CommentSearchResponse dto = new CommentSearchResponse();
             dto.setCommentId(comment.getCommentId());
             dto.setCommentContent(comment.getCommentContent());
             dto.setTotalLike(comment.getTotalLike());
