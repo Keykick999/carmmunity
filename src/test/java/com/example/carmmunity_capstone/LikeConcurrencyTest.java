@@ -4,7 +4,6 @@ import com.example.carmmunity_capstone.dto.CommentLikeRequest;
 import com.example.carmmunity_capstone.jwt.JwtProvider;
 import com.example.carmmunity_capstone.repository.CommentRepository;
 import com.example.carmmunity_capstone.service.CommentService;
-import com.example.carmmunity_capstone.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

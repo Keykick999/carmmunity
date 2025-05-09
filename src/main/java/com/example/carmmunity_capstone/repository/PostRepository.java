@@ -1,6 +1,6 @@
 package com.example.carmmunity_capstone.repository;
 
-import com.example.carmmunity_capstone.domain.Post;
+import com.example.carmmunity_capstone.entity.Post;
 import com.example.carmmunity_capstone.dto.PostSearchResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

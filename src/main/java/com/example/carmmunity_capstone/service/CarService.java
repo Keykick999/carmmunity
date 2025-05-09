@@ -1,13 +1,19 @@
 package com.example.carmmunity_capstone.service;
 
-import com.example.carmmunity_capstone.domain.User;
-import com.example.carmmunity_capstone.domain.UserCar;
-import com.example.carmmunity_capstone.domain.UserCarId;
+import com.example.carmmunity_capstone.entity.User;
+import com.example.carmmunity_capstone.entity.UserCar;
+import com.example.carmmunity_capstone.entity.UserCarId;
 import com.example.carmmunity_capstone.dto.UserCarUploadRequestDto;
+import com.example.carmmunity_capstone.exception.CarNotFoundException;
 import com.example.carmmunity_capstone.exception.TooManyUserCarsException;
 import com.example.carmmunity_capstone.repository.UserCarRepository;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 
+import java.net.MalformedURLException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 
 @Service
@@ -23,14 +29,13 @@ public class CarService {
 
 
     // 튜닝 후 차량 저장
-    public void registerTunedCar(UserCarUploadRequestDto userCarUploadRequestDto, String authorizationHeader) {
-        // 인증된 회원인지 확인
-        User user = userService.validateUser(authorizationHeader);
+    public void registerTunedCar(UserCarUploadRequestDto userCarUploadRequestDto) {
+        User user = userService.getAuthenticatedUser();
 
 
         // UserCar에서 회원 id값으로 조회해서 몇 개 있는지 확인   TODO 삭제일시나 생성일시 추가해야
         for (int slot = 1; slot <= 3; slot++) {
-            UserCarId tryId = new UserCarId(user.getId(), slot);
+            UserCarId tryId = new UserCarId(user.getUserId(), slot);
             if (!userCarRepository.existsByIdAndDeletedAtIsNull(tryId)) {    // 비어있는 슬롯이면 저장
                 UserCar userCar = UserCar.builder()
                         .id(tryId)
@@ -47,6 +52,20 @@ public class CarService {
 
         // 비어있는 슬롯 없으면 에러
         throw new TooManyUserCarsException();
+    }
+
+
+    // 튜닝된 차량 조회
+    public Resource getTunedCar(Integer carId) throws MalformedURLException {
+        User user = userService.getAuthenticatedUser();
+
+        UserCarId userCarId = new UserCarId(user.getUserId(), carId);
+
+        UserCar userCar = userCarRepository.findByIdAndDeletedAtIsNull(userCarId)
+                .orElseThrow(() -> new CarNotFoundException("해당 차량을 찾을 수 없습니다."));
+
+        Path imagePath = Paths.get(userCar.getImagePath());
+        return new UrlResource(imagePath.toUri());
     }
 }
 

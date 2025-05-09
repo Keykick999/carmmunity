@@ -4,141 +4,120 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.PriorityQueue;
 
-
 public class Main {
     static class Node implements Comparable<Node> {
-        int vertex, weight;
-        boolean visited;
+        int vertex, remainFree;
+        long weight;
+        HashSet<Integer> visited;
 
-        public Node(int vertex, int weight, boolean visited) {
+
+        public Node(int vertex, long weight, int remainFree, HashSet<Integer> visited) {
             this.vertex = vertex;
             this.weight = weight;
+            this.remainFree = remainFree;
             this.visited = visited;
         }
 
         @Override
         public int compareTo(Node o) {
-            return this.weight - o.weight;
+            return Long.compare(this.weight, o.weight);
         }
     }
-
 
     public static void main(String[] args) throws IOException {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        StringBuilder buffer = new StringBuilder();
 
 
         // 입력
-        int T = Integer.parseInt(br.readLine());
+        String[] input = br.readLine().split(" ");
+        int N = Integer.parseInt(input[0]); // 정점 개수(1 ~ N)
+        int P = Integer.parseInt(input[1]); // 간선 개수 P
+        int K = Integer.parseInt(input[2]); // 공짜 제공 케이블 개수
 
 
-        for (int p = 0; p < T; p++) {
-            String[] input1 = br.readLine().split(" ");
-            int n = Integer.parseInt(input1[0]);    // 정점 개수
-            int m = Integer.parseInt(input1[1]);    // 간선 개수
-            int t = Integer.parseInt(input1[2]);    // 목적지 후보 개수
-            String[] input2 = br.readLine().split(" ");
-            int start = Integer.parseInt(input2[0]);    // 출발지
-            int g = Integer.parseInt(input2[1]);    // 필수 방문 간선 출발점
-            int h = Integer.parseInt(input2[2]);    // 필수 방문 간선 도착점
-
-            // 간선 초기화
-            ArrayList<ArrayList<Node>> adjList = new ArrayList<>();
-            for (int i = 0; i <= n; i++) adjList.add(new ArrayList<>());
+        // P개의 간선
+        ArrayList<ArrayList<Node>> graph = new ArrayList<>();
+        for (int i = 0; i <= N; i++) graph.add(new ArrayList<>());
 
 
-            // m개의 간선 입력
-            for (int i = 0; i < m; i++) {
-                String[] connection = br.readLine().split(" ");
-                int v1 = Integer.parseInt(connection[0]);
-                int v2 = Integer.parseInt(connection[1]);
-                int w = Integer.parseInt(connection[2]);
-                adjList.get(v1).add(new Node(v2,w,false));
-                adjList.get(v2).add(new Node(v1,w,false));
-            }
-
-
-            // t개의 목적지 후보들 입력
-            HashSet<Integer> possibleObjectives = new HashSet<>();
-            for (int i = 0; i < t; i++) possibleObjectives.add(Integer.parseInt(br.readLine()));
-
-
-            // 다익스트라
-            ArrayList<Integer> resultList = dijkstra(adjList, start, possibleObjectives, g, h);
-            for (Integer i : resultList) {
-                buffer.append(i + " ");
-            }
-            buffer.append("\n");
+        for (int i = 0; i < P; i++) {
+            String[] connection = br.readLine().split(" ");
+            int v1 = Integer.parseInt(connection[0]);
+            int v2 = Integer.parseInt(connection[1]);
+            int w = Integer.parseInt(connection[2]);
+            graph.get(v1).add(new Node(v2, w, 0, new HashSet<>()));
+            graph.get(v2).add(new Node(v1, w, 0, new HashSet<>()));
         }
 
-        System.out.print(buffer);
+
+        System.out.print(dijkstra(graph, N, K));
     }
 
-
-    // 다익스트라
-    public static ArrayList<Integer> dijkstra(ArrayList<ArrayList<Node>> adjList, int start, HashSet<Integer> possibleObjectives, int g, int h) {
+    // start는 N, free는 제공해주는 공짜 선 개수
+    public static long dijkstra(ArrayList<ArrayList<Node>> graph, int start, int free) {
         // dist 배열 초기화
-        int[][] dist = new int[adjList.size()][2];
-        for (int i = 1; i < dist.length; i++) {
-            dist[i][0] = Integer.MAX_VALUE; // g->h 방문x시의 가중치
-            dist[i][1] = Integer.MAX_VALUE; // g->h 방문시의 가중치
-        }
-        dist[start][0] = 0;
-        dist[start][1] = 0;
+        int N = graph.size();
+        long[] dist = new long[N + 1];
+        Arrays.fill(dist, Long.MAX_VALUE);
+        dist[start] = 0;
 
         // pq 초기화
         PriorityQueue<Node> pq = new PriorityQueue<>();
-        pq.add(new Node(start, 0, false));
+        HashSet<Integer> visited = new HashSet<>();
+        visited.add(start);
+        pq.add(new Node(start, 0, free, visited));
 
 
         while (!pq.isEmpty()) {
             Node curr = pq.poll();
             int currVertex = curr.vertex;
-            int currWeight = curr.weight;
-            boolean visited = curr.visited;
+            long currWeight = curr.weight;
+            int remainFree = curr.remainFree;
+            HashSet<Integer> currVisited = curr.visited;
 
 
-            // 최단 경로 아니면 continue
-            if (!visited && dist[currVertex][0] < currWeight) continue;
-            if (visited && dist[currVertex][1] < currWeight) continue;
+            // 최적의 경로 아님
+            if (currWeight > dist[currVertex]) continue;
 
 
-            // 이웃 노드 방문
-            for (Node neighbor : adjList.get(currVertex)) {
+            // 인접 노드 방문
+            for (Node neighbor : graph.get(currVertex)) {
                 int next = neighbor.vertex;
-                int weight = neighbor.weight;
-                boolean nextVisited = visited;
+                if (currVisited.contains(next)) continue;    // 방문한 곳 다시 안감
+                long nextWeight = Long.max(currWeight, neighbor.weight);  // 기존 가중치랑 비교해서 더 큰 값
 
-                // 조건 만족하는 경우(g -> h or h -> g) visited는 true
-                if ((currVertex == g && next == h) || (currVertex == h && next == g)) {
-                    nextVisited = true;
+                // 남은 공짜로 제공 가능한 선 개수 남아있으면 가중치 0
+                HashSet<Integer> nextVisited = new HashSet<>(currVisited);
+                if (remainFree > 0) {
+                    nextWeight = 0; // 가중치 0
+                    dist[next] = nextWeight;
+                    nextVisited.add(next);
+                    pq.add(new Node(next, nextWeight, remainFree - 1, nextVisited));
                 }
-
-                // 가중치 낮거나 같은데 조건 만족하는 경우만 방문
-                if (!nextVisited && (currWeight + weight < dist[next][0])) {
-                    dist[next][0] = weight + currWeight;
-                    pq.add(new Node(next, dist[next][0], nextVisited));
-                }
-                else if (nextVisited && (currWeight + weight < dist[next][1])) {
-                    dist[next][1] = weight + currWeight;
-                    pq.add(new Node(next, dist[next][1], nextVisited));
+                else if (remainFree == 0) {
+                    dist[next] = nextWeight;
+                    nextVisited.add(next);
+                    pq.add(new Node(next, nextWeight, 0, nextVisited));
                 }
             }
         }
 
 
-        // 목적지들중 불가능한 목적지(방문 여부 0인)는 제외
-        ArrayList<Integer> resultList = new ArrayList<>();
-        for (Integer possibleObjective : possibleObjectives) {
-            if (dist[possibleObjective][1] != Integer.MAX_VALUE && dist[possibleObjective][1] <= dist[possibleObjective][0]) {
-                resultList.add(possibleObjective);
-            }
-        }
-        Collections.sort(resultList);
-        return resultList;
+        return (dist[1] == Long.MAX_VALUE) ? -1 : dist[1];
     }
 }
+
+
+
+
+
+
+
+
+
+
+

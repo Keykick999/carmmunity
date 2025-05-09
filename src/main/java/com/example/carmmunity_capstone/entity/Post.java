@@ -1,4 +1,4 @@
-package com.example.carmmunity_capstone.domain;
+package com.example.carmmunity_capstone.entity;
 
 import com.example.carmmunity_capstone.dto.PostType;
 import jakarta.persistence.*;
@@ -41,7 +41,7 @@ public class Post extends BaseEntity {
     @Column(nullable = false)
     private Integer totalLike = 0;
 
-    @ManyToOne
-    @JoinColumn(name = "userId", insertable = false, updatable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", referencedColumnName = "user_id", nullable = false)
     private User user;
 }

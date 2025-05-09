@@ -1,7 +1,7 @@
 package com.example.carmmunity_capstone.repository;
 
-import com.example.carmmunity_capstone.domain.CommentLike;
-import com.example.carmmunity_capstone.domain.CommentLikeId;
+import com.example.carmmunity_capstone.entity.CommentLike;
+import com.example.carmmunity_capstone.entity.CommentLikeId;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

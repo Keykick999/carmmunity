@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>회원가입</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .signup-card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            width: 400px;
+            box-sizing: border-box;
+        }
+
+        .signup-card h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .signup-card input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            box-sizing: border-box;
+        }
+
+        .signup-card .error-message {
+            color: red;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        .signup-card button {
+            width: 100%;
+            padding: 10px;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            margin-top: 15px;
+            cursor: pointer;
+        }
+
+        .signup-card button:hover {
+            background-color: #1e40af;
+        }
+    </style>
+</head>
+<body>
+<div class="signup-card">
+    <h2>회원가입</h2>
+
+    <input type="text" id="userId" placeholder="아이디" required />
+    <div id="userIdError" class="error-message"></div>
+
+    <input type="password" id="password" placeholder="비밀번호" required />
+    <div id="passwordError" class="error-message"></div>
+
+    <input type="text" id="name" placeholder="이름" required />
+
+    <input type="text" id="nickname" placeholder="닉네임" required />
+    <div id="nicknameError" class="error-message"></div>
+
+    <input type="email" id="email" placeholder="이메일" required />
+    <div id="emailError" class="error-message"></div>
+
+    <!-- 이메일 인증 관련 기능 (비활성화 중) -->
+    <!--
+    <button onclick="sendCode()">인증 코드 발송</button>
+    <input type="text" id="emailCode" placeholder="이메일 인증 코드 입력" />
+    <button onclick="verifyCode()">코드 확인</button>
+    -->
+
+    <input type="tel" id="phone" placeholder="전화번호 (선택)" />
+    <label><input type="checkbox" id="agreeTerms" required /> 약관에 동의합니다</label>
+    <button onclick="signup()">회원가입</button>
+</div>
+</body>
+<script src="/js/signup.js"></script>
+</html>

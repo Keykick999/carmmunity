@@ -61,6 +61,17 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.BAD_REQUEST)
                 .body(ex.getMessage());
     }
+
+    @ExceptionHandler(UnauthenticatedUserException.class)
+    public ResponseEntity<String> handleUnauthenticatedUserException(UnauthenticatedUserException e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+    }
+
+
+    @ExceptionHandler(CarNotFoundException.class)
+    public ResponseEntity<String> handleCarNotFoundException(CarNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+    }
 }
 
 

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>로그인</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-image: url('/car.gif');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.92);
+            padding: 40px 30px;
+            border-radius: 16px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            width: 360px;
+            box-sizing: border-box;
+        }
+
+        .login-card h2 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #111827;
+        }
+
+        .login-card input {
+            width: 100%;
+            padding: 12px;
+            margin-top: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        .login-card button {
+            width: 100%;
+            padding: 12px;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            margin-top: 20px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .login-card button:hover {
+            background-color: #1e40af;
+        }
+
+        .login-card .links {
+            text-align: center;
+            margin-top: 18px;
+            font-size: 14px;
+        }
+
+        .login-card .links a {
+            margin: 0 6px;
+            color: #2563eb;
+            text-decoration: none;
+        }
+
+        .login-card .links a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+<div class="login-card">
+    <h2>로그인</h2>
+    <input id="userIdInput" type="text" placeholder="아이디를 입력하세요" required />
+    <input id="passwordInput" type="password" placeholder="비밀번호를 입력하세요" required />
+    <button id="loginBtn">로그인</button>
+    <div class="links">
+        <a href="signup">회원가입</a> |
+        <a href="#">아이디 찾기</a> |
+        <a href="#">비밀번호 찾기</a>
+    </div>
+</div>
+</body>
+<script src="/js/start.js"></script>
+</html>

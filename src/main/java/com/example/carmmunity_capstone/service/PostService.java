@@ -1,10 +1,10 @@
 package com.example.carmmunity_capstone.service;
 
-import com.example.carmmunity_capstone.domain.Post;
-import com.example.carmmunity_capstone.domain.PostLike;
-import com.example.carmmunity_capstone.domain.PostLikeId;
-import com.example.carmmunity_capstone.domain.User;
+import com.example.carmmunity_capstone.entity.Post;
+import com.example.carmmunity_capstone.entity.PostLike;
+import com.example.carmmunity_capstone.entity.PostLikeId;
 import com.example.carmmunity_capstone.dto.*;
+import com.example.carmmunity_capstone.entity.User;
 import com.example.carmmunity_capstone.exception.PostNotFoundException;
 import com.example.carmmunity_capstone.exception.UnAuthorizedAccessException;
 import com.example.carmmunity_capstone.repository.PostLikeRepository;
@@ -40,9 +40,10 @@ public class PostService {
     // TODO 전부 user 관련 부분 추가해야 관련 저장 값이나 권한 확인 전부
     // 게시글 저장
     @Transactional
-    public void save(String authorizationHeader, PostRequest postSaveRequest, MultipartFile postImage) {
-        // JWT 토큰을 통해 인증된 회원 정보 조회
-        User user = userService.validateUser(authorizationHeader);
+    public void save( PostRequest postSaveRequest, MultipartFile postImage) {
+        User user = userService.getAuthenticatedUser();
+        System.out.println("user = " + user);
+
 
         // 게시글 저장
         Post post = Post.builder()
@@ -52,6 +53,7 @@ public class PostService {
                 .user(user)
                 .build();
         post = applyPostData(post, postSaveRequest, postImage);
+        System.out.println("post = " + post);
 
         postRepository.save(post);
     }
@@ -75,15 +77,14 @@ public class PostService {
 
     // 게시글 수정(저장이랑 동일하게 처리?)
     @Transactional
-    public void update(String authorizationHeader, Integer postId, PostRequest updateRequest, MultipartFile postImage) {
-        // JWT 토큰을 통해 인증된 회원 정보 조회
-        User user = userService.validateUser(authorizationHeader);
+    public void update(Integer postId, PostRequest updateRequest, MultipartFile postImage) {
+        User user = userService.getAuthenticatedUser();
 
         // 게시글 존재 확인
         Post post = postRepository.findById(postId).orElseThrow(() -> new PostNotFoundException("해당 게시글을 찾을 수 없습니다"));
 
         // 작성자 본인인지 확인
-        if (!post.getUser().getId().equals(user.getId())) {
+        if (!post.getUser().getUserId().equals(user.getUserId())) {
             throw new UnAuthorizedAccessException("작성자만 게시글을 수정할 수 있습니다.");
         }
 
@@ -95,15 +96,14 @@ public class PostService {
 
     // 게시글 삭제
     @Transactional
-    public void delete(String authorizationHeader, Integer postId) {
-        // JWT 토큰을 통해 인증된 회원 정보 조회
-        User user = userService.validateUser(authorizationHeader);
+    public void delete(Integer postId) {
+        User user = userService.getAuthenticatedUser();
 
         // 게시글 찾기
         Post post = postRepository.findById(postId).orElseThrow(() -> new PostNotFoundException("해당 게시글을 찾을 수 없습니다."));
 
         // 작성자 본인인지 확인
-        if (!post.getUser().getId().equals(user.getId())) {
+        if (!post.getUser().getUserId().equals(user.getUserId())) {
             throw new UnAuthorizedAccessException("작성자만 게시글을 수정할 수 있습니다.");
         }
 
@@ -171,9 +171,8 @@ public class PostService {
 
     // 게시글 좋아요
     @Transactional
-    public PostLikeResponse likePost(String authorizationHeader, Integer postId, PostLikeRequest request) {
-        // 인증 헤더 검증
-        User user = userService.validateUser(authorizationHeader);
+    public PostLikeResponse likePost(Integer postId, PostLikeRequest request) {
+        User user = userService.getAuthenticatedUser();
 
         // 게시글 찾기
         if (!postRepository.existsById(postId)) {
@@ -181,7 +180,7 @@ public class PostService {
         }
 
         // 게시글 좋아요 있는지 찾기
-        PostLikeId postLikeId = new PostLikeId(postId, user.getId());
+        PostLikeId postLikeId = new PostLikeId(postId, user.getUserId());
         PostLike postLike = toggleOrCreateLike(postLikeId);
         postLikeRepository.save(postLike);
 

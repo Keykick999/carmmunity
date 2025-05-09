@@ -1,47 +1,155 @@
 package com.example.carmmunity_capstone.service;
 
-import com.example.carmmunity_capstone.domain.User;
-import com.example.carmmunity_capstone.exception.InvalidTokenException;
-import com.example.carmmunity_capstone.jwt.JwtProvider;
+import com.example.carmmunity_capstone.config.JwtTokenProvider;
+import com.example.carmmunity_capstone.dto.*;
+import com.example.carmmunity_capstone.entity.User;
+import com.example.carmmunity_capstone.exception.UnauthenticatedUserException;
 import com.example.carmmunity_capstone.repository.UserRepository;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
 
-    private final JwtProvider jwtProvider;
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final AuthenticationManager authenticationManager;
+    private final EmailVerificationService emailVerificationService;
 
-    public UserService(JwtProvider jwtProvider, UserRepository userRepository) {
-        this.jwtProvider = jwtProvider;
-        this.userRepository = userRepository;
-    }
-
-
-    // 회원 유효성 검사
-    public User validateUser(String authorizationHeader) {
-        String userId = jwtProvider.extractUserId(authorizationHeader);
-        return userRepository.findById(userId).orElseThrow(() -> new InvalidTokenException("유효하지 않은 토큰입니다."));
-    }
-
-
-    public Optional<User> getUserIfAuthenticated(String authorizationHeader) {
-        try {
-            if (authorizationHeader == null || authorizationHeader.isBlank()) {
-                return Optional.empty();
-            }
-
-            String userId = jwtProvider.extractUserId(authorizationHeader);
-            return userRepository.findById(userId);
-        } catch (Exception e) {
-            return Optional.empty();    // 토큰 없거나 만료되면 그냥 비인증 처리
+    // 회원가입 처리
+    @Transactional
+    public void register(UserJoinRequest request) {
+        if (userRepository.existsById(request.getUserId())) {
+            throw new IllegalArgumentException("이미 존재하는 아이디입니다.");
         }
+
+        // 인증 코드 확인
+        //emailVerificationService.verifyAndMarkAsVerified(request.getEmail(), "signup");
+
+        User user = User.builder()
+                .userId(request.getUserId())
+                .nickname(request.getNickname())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .email(request.getEmail())
+                .phone(request.getPhone())
+                .name(request.getName())
+                .build();
+
+        userRepository.save(user);
     }
 
-    // 회원 id로 조회
+    // 로그인 처리
+    public UserLoginResponse login(UserLoginRequest request) {
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getUserId(), request.getPassword())
+            );
+        } catch (Exception e) {
+            throw new IllegalArgumentException("아이디 또는 비밀번호가 올바르지 않습니다.");
+        }
+
+        String token = jwtTokenProvider.createToken(request.getUserId());
+        return new UserLoginResponse(token);
+    }
+
+
+
+    // 회원 정보 조회
+    public UserResponse getUserInfo(String userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        return new UserResponse(
+                user.getUserId(),
+                user.getNickname(),
+                user.getEmail(),
+                user.getPhone(),
+                user.getName(),
+                user.getCreatedAt()
+        );
+    }
+
+    // 회원 정보 수정
+    @Transactional
+    public void updateUserInfo(String userId, UserUpdateRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        user.setNickname(request.getNickname());
+        user.setPhone(request.getPhone());
+        userRepository.save(user);
+    }
+
+
+    // 요청보낸 회원의 id값 확인
+    public String getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication.getName();  // JWT에서 setSubject(userId)로 설정했던 값
+    }
+
+    public User getAuthenticatedUser() {
+        String userId = getCurrentUserId();
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new UnauthenticatedUserException("인증된 사용자가 아닙니다."));
+    }
+
+    public Optional<User> getUserIfAuthenticated() {
+        String userId = getCurrentUserId();
+        return userRepository.findById(userId);
+    }
+
     public Optional<User> findById(String userId) {
         return userRepository.findById(userId);
     }
+
+
+        /*
+    // 아이디 찾기
+    public String findUserIdByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .map(User::getUserId)
+                .orElseThrow(() -> new IllegalArgumentException("이메일에 해당하는 사용자가 없습니다."));
+    }
+     */
+
+    /*
+    // 비밀번호 재설정
+    @Transactional
+    public void resetPassword(PasswordResetRequest request) {
+        emailVerificationService.verifyAndMarkAsVerified(request.getEmail(), "reset");
+
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("이메일에 해당하는 사용자가 없습니다."));
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+    }
+    */
+
+    /*
+    // 회원 탈퇴
+    @Transactional
+    public void withdraw(String userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        WithdrawnUser withdrawnUser = WithdrawnUser.builder()
+                .userId(user.getUserId())
+                .deletedAt(LocalDateTime.now())
+                .build();
+
+        withdrawnUserRepository.save(withdrawnUser);
+        userRepository.delete(user);
+    }
+     */
 }

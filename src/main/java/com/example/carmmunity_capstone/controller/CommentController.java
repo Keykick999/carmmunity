@@ -21,53 +21,48 @@ public class CommentController {
 
     // 댓글 저장
     @PostMapping
-    public ResponseEntity<String> saveComment(@RequestHeader(value = "Authorization", required = true) String authorizationHeader,
-                                              @RequestBody CommentSaveRequest commentSaveRequest
+    public ResponseEntity<String> saveComment(@RequestBody CommentSaveRequest commentSaveRequest
                                               ) {
-        commentService.save(authorizationHeader, commentSaveRequest);
+        commentService.save(commentSaveRequest);
         return ResponseEntity.ok("댓글이 성공적으로 작성되었습니다!");
     }
 
 
     // 게시글 id로 댓글 조회
     @GetMapping
-    public ResponseEntity<Page<CommentSearchResponse>> getCommentsByPostId(@RequestHeader(value = "Authorization", required = false) String authorizationHeader,
-                                                                           @RequestParam("parentCommentId") Integer parentCommentId,
+    public ResponseEntity<Page<CommentSearchResponse>> getCommentsByPostId(@RequestParam("parentCommentId") Integer parentCommentId,
                                                                            @RequestParam(defaultValue = "0") int page,
                                                                            @RequestParam(defaultValue = "10") int size,
                                                                            @RequestParam(defaultValue = "CREATEDAT") CommentOrderBy orderBy,
                                                                            @RequestParam(defaultValue = "DESC")Sort.Direction direction) {
-        return ResponseEntity.ok(commentService.getComments(authorizationHeader, parentCommentId, page, size, orderBy, direction));
+        return ResponseEntity.ok(commentService.getComments(parentCommentId, page, size, orderBy, direction));
     }
 
 
 
     // 댓글 수정
     @PatchMapping("/{commentId}")
-    public ResponseEntity<String> updateComment(@RequestHeader(value = "authorization", required = true) String authorizationHeader,
-                                                @PathVariable("commentId") Integer commentId,
+    public ResponseEntity<String> updateComment(@PathVariable("commentId") Integer commentId,
                                                 @RequestBody CommentUpdateRequest commentUpdateRequest
                                                 ) {
-        commentService.update(authorizationHeader, commentId, commentUpdateRequest);
+        commentService.update(commentId, commentUpdateRequest);
         return ResponseEntity.ok("댓글이 성공적으로 수정되었습니다.");
     }
 
 
     // 댓글 삭제
     @DeleteMapping("/{commentId}")
-    public ResponseEntity<String> deleteComment(@RequestHeader(value = "Authorization", required = true) String authorizationHeader,
-                                                @PathVariable("commentId") Integer commentId) {
-        commentService.delete(authorizationHeader, commentId);
+    public ResponseEntity<String> deleteComment(@PathVariable("commentId") Integer commentId) {
+        commentService.delete(commentId);
         return ResponseEntity.noContent().build();
     }
 
 
     // 댓글 좋아요
     @PostMapping("/{commentId}/like")
-    public ResponseEntity<CommentLikeResponse> likeComment(@RequestHeader("Authorization") String authorizationHeader,
-                                                           @PathVariable("commentId") Integer commentId,
+    public ResponseEntity<CommentLikeResponse> likeComment(@PathVariable("commentId") Integer commentId,
                                                            @RequestBody CommentLikeRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(commentService.likeComment(authorizationHeader, commentId, request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(commentService.likeComment(commentId, request));
     }
 }
 

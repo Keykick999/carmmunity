@@ -1,4 +1,4 @@
-package com.example.carmmunity_capstone.domain;
+package com.example.carmmunity_capstone.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;

@@ -1,9 +1,13 @@
 package com.example.carmmunity_capstone.repository;
 
-import com.example.carmmunity_capstone.domain.User;
+import com.example.carmmunity_capstone.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
-@Repository
+import java.util.Optional;
+
 public interface UserRepository extends JpaRepository<User, String> {
+
+    Optional<UserRepository> findByEmail(String email);
+
+    boolean existsByEmail(String email);
 }
