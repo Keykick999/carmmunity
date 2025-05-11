@@ -4,27 +4,25 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.PriorityQueue;
+
 
 public class Main {
     static class Node implements Comparable<Node> {
-        int vertex, remainFree;
-        long weight;
-        HashSet<Integer> visited;
+        int vertex;
+        long transferTime, spentTime;
 
-
-        public Node(int vertex, long weight, int remainFree, HashSet<Integer> visited) {
+        public Node(int vertex, long transferTime, long spentTime) {
             this.vertex = vertex;
-            this.weight = weight;
-            this.remainFree = remainFree;
-            this.visited = visited;
+            this.transferTime = transferTime;
+            this.spentTime = spentTime;
         }
 
         @Override
         public int compareTo(Node o) {
-            return Long.compare(this.weight, o.weight);
+            int comp = Long.compare(this.transferTime, o.transferTime);
+            if (comp != 0) return comp;
+            return Long.compare(this.spentTime, o.spentTime);
         }
     }
 
@@ -33,91 +31,85 @@ public class Main {
 
 
         // 입력
-        String[] input = br.readLine().split(" ");
-        int N = Integer.parseInt(input[0]); // 정점 개수(1 ~ N)
-        int P = Integer.parseInt(input[1]); // 간선 개수 P
-        int K = Integer.parseInt(input[2]); // 공짜 제공 케이블 개수
+        String[] NM = br.readLine().split(" ");
+        int N = Integer.parseInt(NM[0]);    // 정점 개수 N
+        int objective = Integer.parseInt(NM[1]);    // 도착지 번호
 
 
-        // P개의 간선
-        ArrayList<ArrayList<Node>> graph = new ArrayList<>();
-        for (int i = 0; i <= N; i++) graph.add(new ArrayList<>());
+        // N개의 회사 정보
+        String[] trainType = new String[N];
+        for (int i = 0; i < N; i++) trainType[i] = br.readLine();
 
-
-        for (int i = 0; i < P; i++) {
-            String[] connection = br.readLine().split(" ");
-            int v1 = Integer.parseInt(connection[0]);
-            int v2 = Integer.parseInt(connection[1]);
-            int w = Integer.parseInt(connection[2]);
-            graph.get(v1).add(new Node(v2, w, 0, new HashSet<>()));
-            graph.get(v2).add(new Node(v1, w, 0, new HashSet<>()));
-        }
-
-
-        System.out.print(dijkstra(graph, N, K));
-    }
-
-    // start는 N, free는 제공해주는 공짜 선 개수
-    public static long dijkstra(ArrayList<ArrayList<Node>> graph, int start, int free) {
-        // dist 배열 초기화
-        int N = graph.size();
-        long[] dist = new long[N + 1];
-        Arrays.fill(dist, Long.MAX_VALUE);
-        dist[start] = 0;
-
-        // pq 초기화
-        PriorityQueue<Node> pq = new PriorityQueue<>();
-        HashSet<Integer> visited = new HashSet<>();
-        visited.add(start);
-        pq.add(new Node(start, 0, free, visited));
-
-
-        while (!pq.isEmpty()) {
-            Node curr = pq.poll();
-            int currVertex = curr.vertex;
-            long currWeight = curr.weight;
-            int remainFree = curr.remainFree;
-            HashSet<Integer> currVisited = curr.visited;
-
-
-            // 최적의 경로 아님
-            if (currWeight > dist[currVertex]) continue;
-
-
-            // 인접 노드 방문
-            for (Node neighbor : graph.get(currVertex)) {
-                int next = neighbor.vertex;
-                if (currVisited.contains(next)) continue;    // 방문한 곳 다시 안감
-                long nextWeight = Long.max(currWeight, neighbor.weight);  // 기존 가중치랑 비교해서 더 큰 값
-
-                // 남은 공짜로 제공 가능한 선 개수 남아있으면 가중치 0
-                HashSet<Integer> nextVisited = new HashSet<>(currVisited);
-                if (remainFree > 0) {
-                    nextWeight = 0; // 가중치 0
-                    dist[next] = nextWeight;
-                    nextVisited.add(next);
-                    pq.add(new Node(next, nextWeight, remainFree - 1, nextVisited));
-                }
-                else if (remainFree == 0) {
-                    dist[next] = nextWeight;
-                    nextVisited.add(next);
-                    pq.add(new Node(next, nextWeight, 0, nextVisited));
+        // 인접 리스트 입력
+        ArrayList<ArrayList<Node>> adjList = new ArrayList<>();
+        for (int i = 0; i < N; i++) adjList.add(new ArrayList<>());
+        for (int y = 0; y < N; y++) {
+            String[] input = br.readLine().split(" ");
+            for (int x = 0; x < N; x++) {
+                int weight = Integer.parseInt(input[x]);
+                if (weight > 0) {
+                    int transferTime = 0;   // 환승 횟수 계산
+                    if (!trainType[y].equals(trainType[x])) transferTime = 1;
+                    adjList.get(y).add(new Node(x, transferTime, weight));
                 }
             }
         }
 
 
-        return (dist[1] == Long.MAX_VALUE) ? -1 : dist[1];
+        // 출발지를 0으로 설정하여 다익스트라 실행
+        long[] result = dijkstra(adjList, 0, objective);
+        System.out.print(result[0] + " " + result[1]);
+    }
+
+    public static long[] dijkstra(ArrayList<ArrayList<Node>> adjList, int start, int objective) {
+        // dist 배열 초기화
+        int N = adjList.size();
+        long[][] dist = new long[N][2]; // (환승횟수, 소요시간)
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < 2; j++) {
+                dist[i][j] = Long.MAX_VALUE;
+            }
+        }
+        dist[start][0] = 0;
+        dist[start][1] = 0;
+
+        // pq 초기화
+        PriorityQueue<Node> pq = new PriorityQueue<>();
+        pq.add(new Node(start, 0, 0));
+
+
+        while (!pq.isEmpty()) {
+            Node curr = pq.poll();
+            int currVertex = curr.vertex;
+            long currTransferTime = curr.transferTime;
+            long currSpentTime = curr.spentTime;
+
+
+            // 최적의 경로가 아니면(환승횟수가 더 크거나 혹은 같은데 소요 시간 더 큼)
+            if (currTransferTime > dist[currVertex][0]) continue;
+            if ((currTransferTime == dist[currVertex][0]) && (currSpentTime > dist[currVertex][1])) continue;
+
+
+            // 인접 노드 방문
+            for (Node neighbor : adjList.get(currVertex)) {
+                int next = neighbor.vertex;
+                long transferTime = neighbor.transferTime;
+                long spentTime = neighbor.spentTime;
+
+                // 환승횟수 적거나 혹은 같은데 소요 시간 적으면 방문
+                if (currTransferTime + transferTime < dist[next][0]) {
+                    dist[next][0] = currTransferTime + transferTime;
+                    dist[next][1] = currSpentTime + spentTime;
+                    pq.add(new Node(next, dist[next][0], dist[next][1]));
+                }
+                else if ((currTransferTime + transferTime == dist[next][0]) && (currSpentTime + spentTime < dist[next][1])) {
+                    dist[next][0] = currTransferTime + transferTime;
+                    dist[next][1] = currSpentTime + spentTime;
+                    pq.add(new Node(next, dist[next][0], dist[next][1]));
+                }
+            }
+        }
+
+        return new long[]{dist[objective][0], dist[objective][1]};
     }
 }
-
-
-
-
-
-
-
-
-
-
-
