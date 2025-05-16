@@ -19,18 +19,22 @@ public class EmailVerification {
     @Column(name = "Email", nullable = false, length = 255)
     private String email;
 
-    @Column(name = "User_ID", nullable = false, length = 50)
+    @Column(name = "User_ID", length = 50)
     private String userId;
 
     @Column(name = "Verification_Code", nullable = false, length = 10)
     private String verificationCode;
 
     @Column(name = "Purpose", nullable = false, length = 10)
-    private String purpose; // 'signup' or 'reset'
+    private String purpose; // "signup" or "reset"
 
-    @Column(name = "Created_At")
+    @Column(name = "Created_At", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    @Column(name = "Is_Verified")
+    @Column(name = "Is_Verified", nullable = false)
     private Boolean isVerified = false;
+
+    public boolean isExpired() {
+        return createdAt.plusMinutes(3).isBefore(LocalDateTime.now());
+    }
 }

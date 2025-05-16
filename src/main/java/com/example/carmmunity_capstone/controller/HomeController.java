@@ -21,4 +21,14 @@ public class HomeController {
     public String carTest() {
         return "html/index";
     }
+
+    @GetMapping("/id-find")
+    public String idFind() {
+        return "html/id-find";
+    }
+
+    @GetMapping("/main")
+    public String minPage() {
+        return "html/main";
+    }
 }

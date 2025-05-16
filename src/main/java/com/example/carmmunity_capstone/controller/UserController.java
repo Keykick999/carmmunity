@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/users")
 @RequiredArgsConstructor
@@ -47,13 +49,12 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
-    /*
     // 아이디 찾기
-    @GetMapping("/find-id")
-    public ResponseEntity<String> findUserId(@RequestParam String email) {
-        return ResponseEntity.ok(userService.findUserIdByEmail(email));
+    @PostMapping("/find-id")
+    public ResponseEntity<Map<String, String>> findUserId(@RequestBody @Valid FindIdRequest request) {
+        String userId = userService.findIdByEmail(request.getEmail());
+        return ResponseEntity.ok(Map.of("userId", userId));
     }
-     */
 
     /*
     // 비밀번호 재설정 요청 - 인증 코드 전송만 수행

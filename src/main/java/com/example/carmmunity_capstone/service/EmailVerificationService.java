@@ -2,70 +2,72 @@ package com.example.carmmunity_capstone.service;
 
 import com.example.carmmunity_capstone.entity.EmailVerification;
 import com.example.carmmunity_capstone.repository.EmailVerificationRepository;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
+import com.example.carmmunity_capstone.repository.UserRepository;
+import com.example.carmmunity_capstone.util.EmailSender;
 import lombok.RequiredArgsConstructor;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.Random;
 
 @Service
 @RequiredArgsConstructor
 public class EmailVerificationService {
 
-    private final EmailVerificationRepository emailVerificationRepository;
-    private final JavaMailSender mailSender;
+    private final EmailVerificationRepository repository;
+    private final EmailSender emailSender; // 별도 구현 필요
+    private final UserRepository userRepository;
 
-    /**
-     * 인증 코드 전송 처리
-     * 이메일, 목적(signup/reset)에 따라 인증 코드 생성 및 발송
-     */
     public void sendVerificationCode(String email, String purpose) {
-        String code = generateVerificationCode();
+        validatePurpose(purpose);
 
-        // DB에 인증 코드 저장
+        // 같은 이메일에 대해 다른 userId로 시도하는 경우 차단
+        if (userRepository.findByEmail(email).isPresent()) {
+                throw new IllegalArgumentException("이미 회원가입에 사용된 이메일입니다.");
+            }
+
+        String code = generateCode();
+
         EmailVerification verification = EmailVerification.builder()
                 .email(email)
                 .verificationCode(code)
                 .purpose(purpose)
+                .createdAt(LocalDateTime.now())
                 .isVerified(false)
                 .build();
-        emailVerificationRepository.save(verification);
 
-        // 이메일 발송
-        try {
-            sendEmail(email, "[CarCommunity] 인증 코드", "인증 코드는 다음과 같습니다: <b>" + code + "</b>");
-        } catch (MessagingException e) {
-            throw new RuntimeException("이메일 발송에 실패했습니다.", e);
-        }
+        repository.save(verification);
+        emailSender.send(email, "[CarCommunity] 인증 코드", "인증 코드는: " + code);
     }
 
-    /**
-     * 인증 코드 검증 처리
-     * 이메일 + 목적에 해당하는 가장 최근 인증 내역을 확인하여 인증 상태 변경
-     */
-    @Transactional
-    public void verifyAndMarkAsVerified(String email, String purpose) {
-        EmailVerification verification = emailVerificationRepository
+
+    public void verifyAndMarkAsVerified(String email, String code, String purpose) {
+        EmailVerification verification = repository
                 .findTopByEmailAndPurposeOrderByCreatedAtDesc(email, purpose)
-                .orElseThrow(() -> new IllegalArgumentException("인증 요청 기록이 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("인증 요청이 없습니다."));
 
-        verification.setIsVerified(true); // 인증 완료 표시
+        if (verification.getIsVerified()) return;
+
+        if (verification.isExpired()) {
+            throw new IllegalArgumentException("인증 코드가 만료되었습니다.");
+        }
+
+        if (!verification.getVerificationCode().equals(code)) {
+            throw new IllegalArgumentException("인증 코드가 일치하지 않습니다.");
+        }
+
+        verification.setIsVerified(true);
+        repository.save(verification);
     }
 
-    // 6자리 숫자 코드 생성
-    private String generateVerificationCode() {
-        return String.valueOf((int)(Math.random() * 900000) + 100000);
+    private String generateCode() {
+        return String.valueOf(new Random().nextInt(900000) + 100000); // 6자리 숫자
     }
 
-    // 이메일 발송
-    private void sendEmail(String to, String subject, String htmlContent) throws MessagingException {
-        MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-        helper.setTo(to);
-        helper.setSubject(subject);
-        helper.setText(htmlContent, true);
-        mailSender.send(message);
+    private void validatePurpose(String purpose) {
+        if (!"signup".equals(purpose) && !"reset".equals(purpose)) {
+            throw new IllegalArgumentException("지원하지 않는 인증 목적입니다.");
+        }
     }
 }

@@ -1,5 +1,6 @@
 package com.example.carmmunity_capstone.service;
 
+
 import com.example.carmmunity_capstone.config.JwtTokenProvider;
 import com.example.carmmunity_capstone.dto.*;
 import com.example.carmmunity_capstone.entity.User;
@@ -15,6 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+
 
 @Service
 @RequiredArgsConstructor
@@ -33,8 +35,12 @@ public class UserService {
             throw new IllegalArgumentException("이미 존재하는 아이디입니다.");
         }
 
-        // 인증 코드 확인
-        //emailVerificationService.verifyAndMarkAsVerified(request.getEmail(), "signup");
+        // ✅ 이메일 인증 코드 검증
+        emailVerificationService.verifyAndMarkAsVerified(
+                request.getEmail(),
+                request.getVerificationCode(),
+                "signup"
+        );
 
         User user = User.builder()
                 .userId(request.getUserId())
@@ -61,7 +67,6 @@ public class UserService {
         String token = jwtTokenProvider.createToken(request.getUserId());
         return new UserLoginResponse(token);
     }
-
 
 
     // 회원 정보 조회
@@ -91,6 +96,14 @@ public class UserService {
     }
 
 
+    // 아이디 찾기
+    public String findIdByEmail(String email) {
+        return userRepository.findIdByEmail(email)
+                .map(User::getUserId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 이메일로 가입된 계정이 없습니다."));
+    }
+
+
     // 요청보낸 회원의 id값 확인
     public String getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -113,14 +126,6 @@ public class UserService {
     }
 
 
-        /*
-    // 아이디 찾기
-    public String findUserIdByEmail(String email) {
-        return userRepository.findByEmail(email)
-                .map(User::getUserId)
-                .orElseThrow(() -> new IllegalArgumentException("이메일에 해당하는 사용자가 없습니다."));
-    }
-     */
 
     /*
     // 비밀번호 재설정
@@ -153,3 +158,4 @@ public class UserService {
     }
      */
 }
+

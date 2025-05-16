@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>아이디 찾기</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .find-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        .form-floating {
+            margin-bottom: 0.5rem;
+        }
+        .btn-primary {
+            width: 100%;
+            padding: 0.8rem;
+        }
+        .auth-switch {
+            text-align: center;
+            margin-top: 1rem;
+            color: #6c757d;
+        }
+        .auth-switch a {
+            color: #0d6efd;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .auth-switch a:hover {
+            text-decoration: underline;
+        }
+        .error-message {
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            display: none;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .result-message {
+            text-align: center;
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 5px;
+            display: none;
+        }
+        .result-message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .result-message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+<div class="find-container">
+    <h2 class="text-center mb-4">아이디 찾기</h2>
+
+    <div class="form-group">
+        <div class="form-floating">
+            <input type="email" class="form-control" id="email" placeholder="이메일">
+            <label for="email">이메일</label>
+        </div>
+        <div id="emailError" class="error-message"></div>
+    </div>
+
+    <button class="btn btn-primary" onclick="findId()">아이디 찾기</button>
+
+    <div id="resultMessage" class="result-message"></div>
+
+    <div class="auth-switch">
+        <a href="/">로그인으로 돌아가기</a>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="/js/id-find.js"></script>
+</body>
+</html>

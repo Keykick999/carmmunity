@@ -25,7 +25,7 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
         localStorage.setItem("token", data.token);
 
         alert("로그인 성공!");
-        window.location.href = "/home";
+        window.location.href = "/main";
     } catch (err) {
         console.error(err);
         alert("로그인 실패: " + err.message);
