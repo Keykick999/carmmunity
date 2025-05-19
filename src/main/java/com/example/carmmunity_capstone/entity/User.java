@@ -21,8 +21,6 @@ public class User {
     @Column(name = "User_ID", length = 50)
     private String userId;
 
-
-
     @Column(name = "Nickname", nullable = false, length = 50)
     private String nickname;
 

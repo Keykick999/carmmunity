@@ -30,12 +30,13 @@ public class CommentController {
 
     // 게시글 id로 댓글 조회
     @GetMapping
-    public ResponseEntity<Page<CommentSearchResponse>> getCommentsByPostId(@RequestParam("parentCommentId") Integer parentCommentId,
+    public ResponseEntity<Page<CommentSearchResponse>> getCommentsByPostId(@RequestParam(value = "parentCommentId", required = false) Integer parentCommentId,
+                                                                           @RequestParam(value = "postId") Integer postId,
                                                                            @RequestParam(defaultValue = "0") int page,
                                                                            @RequestParam(defaultValue = "10") int size,
                                                                            @RequestParam(defaultValue = "CREATEDAT") CommentOrderBy orderBy,
                                                                            @RequestParam(defaultValue = "DESC")Sort.Direction direction) {
-        return ResponseEntity.ok(commentService.getComments(parentCommentId, page, size, orderBy, direction));
+        return ResponseEntity.ok(commentService.getComments(postId, parentCommentId, page, size, orderBy, direction));
     }
 
 

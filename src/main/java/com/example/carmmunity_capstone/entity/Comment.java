@@ -1,7 +1,6 @@
 package com.example.carmmunity_capstone.entity;
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDateTime;
 
 

@@ -33,6 +33,9 @@ public class Post extends BaseEntity {
     @Column(nullable = true)
     private String imagePath;
 
+    @Column
+    private String thumbnailPath;
+
     private LocalDateTime deletedAt;
 
     @Column(nullable = false)

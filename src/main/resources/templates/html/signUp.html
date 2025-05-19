@@ -2,61 +2,80 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>회원가입</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carmmunity 회원가입</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500;700&display=swap');
 
         body {
-            background-color: #f5f6fa;
-            font-family: 'Noto Sans KR', sans-serif;
-            height: 100vh;
+            background-color: #fafafa;
+            font-family: 'Outfit', sans-serif;
             display: flex;
-            align-items: center;
             justify-content: center;
-            animation: fadeIn 0.6s ease-in;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .signup-card {
-            background: white;
-            padding: 2rem;
+        .signup-box {
+            background-color: #fff;
+            border: 1px solid #dbdbdb;
             border-radius: 12px;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+            padding: 40px;
             width: 100%;
-            max-width: 420px;
+            max-width: 450px;
+            text-align: center;
         }
 
-        .signup-card h2 {
-            text-align: center;
-            margin-bottom: 1.5rem;
-            color: #343a40;
+        .logo {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo img {
+            height: 40px;
         }
 
         .form-floating {
             margin-bottom: 1rem;
+            text-align: left;
         }
 
-        .btn-primary {
-            background-color: #4e73df;
+        .verification-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .btn-submit {
+            width: 100%;
+            background-color: #0095f6;
+            color: white;
             border: none;
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: 600;
         }
 
-        .btn-primary:hover {
-            background-color: #374fcf;
+        .btn-submit:hover {
+            background-color: #0077cc;
         }
 
-        .btn-outline-secondary {
-            border-color: #ced4da;
+        .form-check {
+            text-align: left;
+            margin-top: 10px;
         }
 
-        .btn-outline-secondary:hover {
-            background-color: #dee2e6;
+        .error-message {
+            color: #dc3545;
+            font-size: 0.85rem;
+            display: none;
         }
 
         .auth-switch {
@@ -66,51 +85,21 @@
         }
 
         .auth-switch a {
-            color: #4e73df;
+            color: #0095f6;
             text-decoration: none;
         }
 
         .auth-switch a:hover {
             text-decoration: underline;
         }
-
-        .error-message {
-            color: #dc3545;
-            font-size: 0.85rem;
-            margin-top: 0.25rem;
-            display: none;
-        }
-
-        .result-message {
-            text-align: center;
-            margin-top: 1rem;
-            padding: 1rem;
-            border-radius: 6px;
-            display: none;
-        }
-
-        .result-message.success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .result-message.error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .verification-group {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-        }
     </style>
 </head>
 <body>
-<div class="signup-card">
-    <h2>회원가입</h2>
+<div class="signup-box">
+    <div class="logo">
+        <img src="/logo.PNG" alt="Carmmunity Logo">
+        Carmmunity
+    </div>
 
     <div class="form-floating">
         <input type="text" class="form-control" id="userId" placeholder="아이디">
@@ -161,12 +150,12 @@
         <label class="form-check-label" for="agreeTerms">약관에 동의합니다</label>
     </div>
 
-    <button class="btn btn-primary w-100" onclick="signUp()">회원가입</button>
+    <button class="btn-submit" onclick="signUp()">회원가입</button>
 
-    <div id="resultMessage" class="result-message"></div>
+    <div id="resultMessage" class="error-message mt-3"></div>
 
     <div class="auth-switch">
-        <a href="/login">로그인으로 돌아가기</a>
+        계정이 있으신가요? <a href="/login">로그인</a>
     </div>
 </div>
 <script src="/js/signup.js"></script>

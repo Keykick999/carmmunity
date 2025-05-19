@@ -35,12 +35,18 @@ public class PostController {
 
     // 게시글 전체 조회
     @GetMapping
-    public ResponseEntity<Page<PostSearchResponse>> findAll(@RequestParam(value = "page", defaultValue = "0") int page,
-                                              @RequestParam(value = "size", defaultValue = "10") int size,
-                                              @RequestParam(defaultValue = "UPDATEDAT") PostOrderBy orderBy,
-                                              @RequestParam(defaultValue="DESC") Sort.Direction direction) {
-        return ResponseEntity.ok(postService.findAll(page, size, orderBy, direction));
+    public ResponseEntity<Page<PostSearchResponse>> findAll(
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size,
+            @RequestParam(defaultValue = "UPDATEDAT") PostOrderBy orderBy,
+            @RequestParam(defaultValue = "DESC") Sort.Direction direction,
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String nickname
+    ) {
+        PostSearchCondition condition = new PostSearchCondition(title, nickname);
+        return ResponseEntity.ok(postService.findAll(condition, page, size, orderBy, direction));
     }
+
 
 
     // 게시글 단일 조회

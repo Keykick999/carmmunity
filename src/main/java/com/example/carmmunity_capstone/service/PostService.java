@@ -61,10 +61,22 @@ public class PostService {
 
     // 게시글 전체 조회
     @Transactional(readOnly = true)
-    public Page<PostSearchResponse> findAll(int page, int size, PostOrderBy orderBy, Sort.Direction direction) {
+    public Page<PostSearchResponse> findAll(PostSearchCondition condition, int page, int size, PostOrderBy orderBy, Sort.Direction direction) {
         Sort sort = Sort.by(direction, orderBy.getField());
         Pageable pageable = PageRequest.of(page, size, sort);
-        return postRepository.findAllPosts(pageable);
+
+        String title = condition.getTitle();
+        String nickname = condition.getNickname();
+
+        if (title != null && !title.isBlank() && nickname != null && !nickname.isBlank()) {
+            return postRepository.findByTitleAndNickname(title, nickname, pageable);
+        } else if (title != null && !title.isBlank()) {
+            return postRepository.findByTitle(title, pageable);
+        } else if (nickname != null && !nickname.isBlank()) {
+            return postRepository.findByNickname(nickname, pageable);
+        } else {
+            return postRepository.findAllPosts(pageable);
+        }
     }
 
 

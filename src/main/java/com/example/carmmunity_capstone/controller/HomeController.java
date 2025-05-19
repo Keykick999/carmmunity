@@ -1,5 +1,4 @@
 package com.example.carmmunity_capstone.controller;
-
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 
@@ -30,5 +29,15 @@ public class HomeController {
     @GetMapping("/main")
     public String minPage() {
         return "html/main";
+    }
+
+    @GetMapping("/postList")
+    public String postList() {
+        return "html/postList";
+    }
+
+    @GetMapping("/postDetail")
+    public String postDetail() {
+        return "html/postDetail";
     }
 }

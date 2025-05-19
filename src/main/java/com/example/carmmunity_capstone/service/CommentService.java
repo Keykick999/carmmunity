@@ -76,31 +76,13 @@ public class CommentService {
 
     // 게시글 id로 댓글 조회
     @Transactional(readOnly = true)
-    public Page<CommentSearchResponse> getComments(Integer parentCommentId, int page, int size, CommentOrderBy orderBy, Sort.Direction direction) {
+    public Page<CommentSearchResponse> getComments(Integer postId, Integer parentCommentId, int page, int size, CommentOrderBy orderBy, Sort.Direction direction) {
         Optional<User> user = userService.getUserIfAuthenticated();
 
         Sort sort = Sort.by(direction, orderBy.getField());
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        Page<Comment> comments = commentRepository.findByParentId(parentCommentId, pageable);
-
-        return comments.map(comment -> {
-            CommentSearchResponse dto = new CommentSearchResponse();
-            dto.setCommentId(comment.getCommentId());
-            dto.setCommentContent(comment.getCommentContent());
-            dto.setTotalLike(comment.getTotalLike());
-
-            // 작성자 여부 판단
-            boolean isAuthor = user
-                    .map(u -> u.getUserId().equals(comment.getUser().getUserId()))
-                    .orElse(false);
-            dto.setAuthor(isAuthor);
-
-            // 언급 유저 정보 포함
-//            dto.setMentionedUser(comment.getMentionedUser());
-
-            return dto;
-        });
+        return commentRepository.findCommentsByPostAndParent(postId, parentCommentId, user.get().getUserId(), pageable);
     }
 
 

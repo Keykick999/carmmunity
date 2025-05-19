@@ -22,7 +22,9 @@ public class PostSearchResponse {
 
     private String imagePath;
 
-    private Integer totalLike = 0;
+    private String thumbnailPath;
+
+    private Integer totalLike;
 
     private String nickname;
 
