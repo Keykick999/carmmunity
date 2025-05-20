@@ -8,7 +8,6 @@ import java.time.LocalDateTime;
 @Getter
 @AllArgsConstructor
 public class UserResponse {
-
     private String userId;
     private String nickname;
     private String email;

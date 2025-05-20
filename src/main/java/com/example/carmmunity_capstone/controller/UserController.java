@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 
@@ -41,7 +42,7 @@ public class UserController {
         return ResponseEntity.ok(userService.getUserInfo(userId));
     }
 
-    // 회원 정보 수정
+    // 회원 정보 수정 - 기본 이미지 이용 시
     @PutMapping("/info")
     public ResponseEntity<Void> updateMyInfo(@RequestHeader("Authorization") String token,
                                              @RequestBody @Valid UserUpdateRequest request) {
@@ -49,6 +50,23 @@ public class UserController {
         userService.updateUserInfo(userId, request);
         return ResponseEntity.ok().build();
     }
+
+    //회원 정보 수정 -사용자가 원하는 이미지 삽입 시
+    @PostMapping("/update-profile")
+    public ResponseEntity<Void> updateProfile(
+            @RequestHeader("Authorization") String token,
+            @RequestParam("nickname") String nickname,
+            @RequestParam("name") String name,
+            @RequestParam(value = "phone", required = false) String phone,
+            @RequestParam(value = "introduction", required = false) String introduction,
+            @RequestParam(value = "profileImage", required = false) MultipartFile profileImage,
+            @RequestParam(value = "defaultImage", required = false) String defaultImage
+    ) {
+        String userId = jwtTokenProvider.getUserId(token.replace("Bearer ", ""));
+        userService.updateUserProfileWithImage(userId, nickname, name, phone, introduction, profileImage, defaultImage);
+        return ResponseEntity.ok().build();
+    }
+
 
 
     // 아이디 찾기

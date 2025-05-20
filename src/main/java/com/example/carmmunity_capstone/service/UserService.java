@@ -6,6 +6,7 @@ import com.example.carmmunity_capstone.dto.*;
 import com.example.carmmunity_capstone.entity.User;
 import com.example.carmmunity_capstone.exception.UnauthenticatedUserException;
 import com.example.carmmunity_capstone.repository.UserRepository;
+import com.example.carmmunity_capstone.util.FileUpload;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -14,6 +15,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Optional;
 
@@ -27,6 +29,7 @@ public class UserService {
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationManager authenticationManager;
     private final EmailVerificationService emailVerificationService;
+    private FileUpload fileUpload;
 
     // 회원가입 처리
     @Transactional
@@ -106,6 +109,30 @@ public class UserService {
 
     }
 
+    //회원 정보 수정 - 유저 업로드 이미지 기준
+    @Transactional
+    public void updateUserProfileWithImage(String userId, String nickname, String name, String phone, String intro,
+                                           MultipartFile profileImage, String defaultImage) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        user.setNickname(nickname);
+        user.setName(name);
+        user.setPhone(phone);
+        user.setIntroduction(intro);
+
+        if (profileImage != null && !profileImage.isEmpty()) {
+            String path = fileUpload.store(profileImage);
+            user.setProfileImagePath(path);
+        } else if (defaultImage != null) {
+            user.setProfileImagePath(defaultImage);
+        }
+
+        userRepository.save(user);
+    }
+
+
 
     // 아이디 찾기
     public String findIdByEmail(String email) {
@@ -113,6 +140,8 @@ public class UserService {
                 .map(User::getUserId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 이메일로 가입된 계정이 없습니다."));
     }
+
+
 
 
     // 요청보낸 회원의 id값 확인

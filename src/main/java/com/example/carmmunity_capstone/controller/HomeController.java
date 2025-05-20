@@ -49,4 +49,9 @@ public class HomeController {
     public String postCreate() {
         return "html/postCreate";
     }
+
+    @GetMapping("/modifyInfo")
+    public String modifyInfo() {
+        return "html/modifyInfo";
+    }
 }

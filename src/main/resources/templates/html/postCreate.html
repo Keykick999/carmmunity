@@ -27,8 +27,14 @@
             margin-bottom: 24px;
         }
 
-        .form-control {
+        .form-group {
             margin-bottom: 20px;
+        }
+
+        label {
+            font-weight: 600;
+            margin-bottom: 6px;
+            display: block;
         }
 
         .btn-primary {
@@ -46,67 +52,31 @@
 <div class="container">
     <h2>게시글 작성</h2>
     <form id="postForm" enctype="multipart/form-data">
-        <input type="text" id="title" name="title" class="form-control" placeholder="제목을 입력하세요" required>
-        <textarea id="content" name="content" class="form-control" placeholder="내용을 입력하세요" rows="6" required></textarea>
+        <div class="form-group">
+            <label for="title">제목</label>
+            <input type="text" id="title" name="title" class="form-control" placeholder="제목을 입력하세요" required>
+        </div>
 
-        <!-- 게시글 유형 선택 박스 삭제 -->
-        <input type="file" id="postImage" name="postImage" class="form-control">
+        <div class="form-group">
+            <label for="content">내용</label>
+            <textarea id="content" name="content" class="form-control" placeholder="내용을 입력하세요" rows="6" required></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="thumbnailImage">썸네일 이미지 (목록에 표시)</label>
+            <input type="file" id="thumbnailImage" name="thumbnailImage" class="form-control">
+        </div>
+
+        <div class="form-group">
+            <label for="postImage">본문 이미지 (상세 페이지에 표시)</label>
+            <input type="file" id="postImage" name="postImage" class="form-control">
+        </div>
 
         <button type="submit" class="btn btn-primary w-100">작성하기</button>
     </form>
 </div>
 
-<script>
-    const form = document.getElementById('postForm');
-    form.addEventListener('submit', function (e) {
-        e.preventDefault();
+<script src="/js/postCreate.js"></script>
 
-        const token = localStorage.getItem('token');
-        if (!token) {
-            alert("로그인이 필요합니다.");
-            window.location.href = "/";
-            return;
-        }
-
-        const formData = new FormData();
-
-        // postType을 무조건 "FREE"로 고정
-        const postData = {
-            title: document.getElementById("title").value,
-            content: document.getElementById("content").value,
-            postType: "FREE"
-        };
-
-        formData.append("postData", new Blob(
-            [JSON.stringify(postData)],
-            { type: "application/json" }
-        ));
-
-        const postImage = document.getElementById("postImage").files[0];
-        if (postImage) {
-            formData.append("postImage", postImage);
-        }
-
-        fetch('/posts', {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${token}`
-            },
-            body: formData
-        })
-            .then(res => {
-                if (!res.ok) throw new Error("게시글 작성 실패");
-                return res.text();
-            })
-            .then(msg => {
-                alert(msg);
-                window.location.href = "/main"; // 작성 후 목록으로 이동
-            })
-            .catch(err => {
-                console.error(err);
-                alert("작성 중 오류가 발생했습니다.");
-            });
-    });
-</script>
 </body>
 </html>

@@ -4,8 +4,8 @@ import com.example.carmmunity_capstone.entity.User;
 import com.example.carmmunity_capstone.entity.UserCar;
 import com.example.carmmunity_capstone.entity.UserCarId;
 import com.example.carmmunity_capstone.dto.UserCarUploadRequestDto;
+import com.example.carmmunity_capstone.dto.UserCarResponseDto;
 import com.example.carmmunity_capstone.exception.CarNotFoundException;
-import com.example.carmmunity_capstone.exception.TooManyUserCarsException;
 import com.example.carmmunity_capstone.repository.UserCarRepository;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -15,6 +15,7 @@ import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class CarService {
@@ -27,38 +28,40 @@ public class CarService {
         this.userService = userService;
     }
 
-
-    // 튜닝 후 차량 저장
-    public void registerTunedCar(UserCarUploadRequestDto userCarUploadRequestDto) {
+    // 차량 저장 (슬롯 선택 또는 첫 저장은 slot 1 강제)
+    public void registerTunedCar(UserCarUploadRequestDto dto) {
         User user = userService.getAuthenticatedUser();
+        int currentCount = userCarRepository.countUserCars(user.getUserId());
 
+        Integer carId = dto.getCarId();
 
-        // UserCar에서 회원 id값으로 조회해서 몇 개 있는지 확인   TODO 삭제일시나 생성일시 추가해야
-        for (int slot = 1; slot <= 3; slot++) {
-            UserCarId tryId = new UserCarId(user.getUserId(), slot);
-            if (!userCarRepository.existsByIdAndDeletedAtIsNull(tryId)) {    // 비어있는 슬롯이면 저장
-                UserCar userCar = UserCar.builder()
-                        .id(tryId)
-                        .user(user)
-                        .imagePath(userCarUploadRequestDto.getImagePath())
-                        .createdAt(LocalDateTime.now())
-                        .updatedAt(LocalDateTime.now())
-                        .deletedAt(null)
-                        .build();
-                userCarRepository.save(userCar);
-                return;
-            }
+        // 첫 저장인 경우 slot 1 강제 지정
+        if (currentCount == 0) {
+            carId = 1;
         }
 
-        // 비어있는 슬롯 없으면 에러
-        throw new TooManyUserCarsException();
+        // 잘못된 슬롯 번호는 무시
+        if (carId == null || carId < 1 || carId > 3) {
+            return;
+        }
+
+        UserCarId id = new UserCarId(user.getUserId(), carId);
+
+        UserCar userCar = UserCar.builder()
+                .id(id)
+                .user(user)
+                .imagePath(dto.getImagePath())
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .deletedAt(null)
+                .build();
+
+        userCarRepository.save(userCar); // 기존 차량이 있으면 덮어씀
     }
 
-
-    // 튜닝된 차량 조회
+    // 단일 차량 조회
     public Resource getTunedCar(Integer carId) throws MalformedURLException {
         User user = userService.getAuthenticatedUser();
-
         UserCarId userCarId = new UserCarId(user.getUserId(), carId);
 
         UserCar userCar = userCarRepository.findByIdAndDeletedAtIsNull(userCarId)
@@ -67,8 +70,14 @@ public class CarService {
         Path imagePath = Paths.get(userCar.getImagePath());
         return new UrlResource(imagePath.toUri());
     }
+
+    // 3개 슬롯 전체 목록 조회
+    public List<UserCarResponseDto> getUserCarList() {
+        User user = userService.getAuthenticatedUser();
+
+        return userCarRepository.findAllByUser_UserIdAndDeletedAtIsNull(user.getUserId())
+                .stream()
+                .map(car -> new UserCarResponseDto(car.getId().getCarId(), car.getImagePath()))
+                .toList();
+    }
 }
-
-
-
-

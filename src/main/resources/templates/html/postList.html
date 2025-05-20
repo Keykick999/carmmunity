@@ -119,6 +119,27 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .write-button {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #333;
+            color: white;
+            font-weight: 600;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: background-color 0.2s ease;
+        }
+
+        .write-button:hover {
+            background-color: #555;
+        }
     </style>
 </head>
 <body>
@@ -127,8 +148,12 @@
         <img src="/image/logo.png" alt="로고">
         Carmmunity
     </div>
-    <img src="/assets/default-profile.png" class="user-profile" alt="유저 프로필" onclick="location.href='/main.html'">
+    <div class="header-right">
+        <a href="/postCreate" class="write-button">+ 글쓰기</a>
+        <img src="/assets/default-profile.png" class="user-profile" alt="유저 프로필" onclick="location.href='/main.html'">
+    </div>
 </header>
+
 
 <div class="search-container">
     <div style="display: flex; gap: 10px; width: 100%; max-width: 600px;">
