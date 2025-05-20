@@ -23,17 +23,17 @@ public interface PostRepository extends JpaRepository<Post, Integer> {
     @Query("UPDATE Post p SET p.totalLike = p.totalLike - 1 WHERE p.postId = :postId")
     void decrementPostLike(@Param("postId") Integer postId);
 
-    @Query("SELECT new com.example.carmmunity_capstone.dto.PostSearchResponse(" +
-            "p.postId, p.postTitle, p.postType, p.postContent, p.imagePath, p.thumbnailPath, p.totalLike, u.nickname, p.updatedAt) " +
-            "FROM Post p " +
-            "JOIN p.user u " +
-            "WHERE p.postId = :postId " +
-            "and p.deletedAt is null")
-    Optional<PostSearchResponse> findPostById(@Param("postId") Integer postId);
+//    @Query("SELECT new com.example.carmmunity_capstone.dto.PostSearchResponse(" +
+//            "p.postId, p.postTitle, p.postType, p.postContent, p.imagePath, p.thumbnailPath, p.totalLike, u.nickname, p.updatedAt, false) " +
+//            "FROM Post p " +
+//            "JOIN p.user u " +
+//            "WHERE p.postId = :postId " +
+//            "and p.deletedAt is null")
+//    Optional<PostSearchResponse> findPostById(@Param("postId") Integer postId);
 
 
     @Query("SELECT new com.example.carmmunity_capstone.dto.PostSearchResponse(" +
-            "p.postId, p.postTitle, p.postType, p.postContent, p.imagePath, p.thumbnailPath, p.totalLike, u.nickname, p.updatedAt) " +
+            "p.postId, p.postTitle, p.postType, p.postContent, p.imagePath, p.thumbnailPath, p.totalLike, u.nickname, p.updatedAt, false) " +
             "FROM Post p " +
             "JOIN p.user u " +
             "WHERE p.deletedAt is null")
@@ -42,21 +42,21 @@ public interface PostRepository extends JpaRepository<Post, Integer> {
 
 
     @Query("SELECT new com.example.carmmunity_capstone.dto.PostSearchResponse(" +
-            "p.postId, p.postTitle, p.postType, p.postContent, p.imagePath, p.thumbnailPath, p.totalLike, u.nickname, p.updatedAt) " +
+            "p.postId, p.postTitle, p.postType, p.postContent, p.imagePath, p.thumbnailPath, p.totalLike, u.nickname, p.updatedAt, false) " +
             "FROM Post p " +
             "JOIN p.user u " +
             "WHERE p.deletedAt is null AND LOWER(p.postTitle) LIKE LOWER(CONCAT('%', :title, '%'))")
     Page<PostSearchResponse> findByTitle(String title, Pageable pageable);
 
     @Query("SELECT new com.example.carmmunity_capstone.dto.PostSearchResponse(" +
-            "p.postId, p.postTitle, p.postType, p.postContent, p.imagePath, p.thumbnailPath, p.totalLike, u.nickname, p.updatedAt) " +
+            "p.postId, p.postTitle, p.postType, p.postContent, p.imagePath, p.thumbnailPath, p.totalLike, u.nickname, p.updatedAt, false) " +
             "FROM Post p " +
             "JOIN p.user u " +
             "WHERE p.deletedAt is null AND LOWER(u.nickname) LIKE LOWER(CONCAT('%', :nickname, '%'))")
     Page<PostSearchResponse> findByNickname(String nickname, Pageable pageable);
 
     @Query("SELECT new com.example.carmmunity_capstone.dto.PostSearchResponse(" +
-            "p.postId, p.postTitle, p.postType, p.postContent, p.imagePath, p.thumbnailPath, p.totalLike, u.nickname, p.updatedAt) " +
+            "p.postId, p.postTitle, p.postType, p.postContent, p.imagePath, p.thumbnailPath, p.totalLike, u.nickname, p.updatedAt, false) " +
             "FROM Post p " +
             "JOIN p.user u " +
             "WHERE p.deletedAt is null " +

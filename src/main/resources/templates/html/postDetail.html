@@ -2,288 +2,152 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>게시글 상세 보기</title>
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <title>게시글 상세 보기 | Carmmunity</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500;700&display=swap');
+
         body {
             margin: 0;
-            background-color: #000;
-            color: white;
-            font-family: 'Arial', sans-serif;
+            background-color: #f9f9f9;
+            color: #333;
+            font-family: 'Outfit', sans-serif;
         }
 
         .container {
             width: 100%;
             max-width: 900px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 30px 16px;
         }
 
         .post-title {
             font-size: 1.6rem;
-            font-weight: bold;
-            margin-bottom: 12px;
+            font-weight: 700;
+            margin-bottom: 16px;
         }
 
         .post-image {
             width: 100%;
             height: 400px;
             object-fit: cover;
-            border-radius: 8px;
-            margin-bottom: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
         }
 
         .post-content {
-            font-size: 1.1rem;
-            line-height: 1.6;
-            margin-bottom: 35px;
+            font-size: 1.05rem;
+            line-height: 1.7;
+            margin-bottom: 30px;
+        }
+
+        .like-button {
+            background-color: #eee;
+            border: none;
+            color: #ff4d4d;
+            font-size: 1rem;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            margin-bottom: 20px;
         }
 
         .comment-section {
-            background-color: #111;
-            border-radius: 6px;
-            padding: 20px;
+            background-color: #fff;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
             margin-bottom: 40px;
         }
 
         .comment {
-            padding: 15px 0;
-            border-bottom: 1px solid #333;
-            font-size: 1rem;
+            padding: 16px 0;
+            border-bottom: 1px solid #eee;
         }
 
         .reply-toggle {
             font-size: 0.9rem;
             color: #00aaff;
             cursor: pointer;
-            margin-top: 5px;
+            margin-top: 8px;
         }
 
         .reply-section {
             margin-left: 20px;
-            background-color: #181818;
-            padding: 10px;
-            border-radius: 4px;
-            margin-top: 5px;
+            background-color: #f1f1f1;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
         }
 
         .reply {
-            padding: 5px 0;
-            border-bottom: 1px solid #333;
+            padding: 8px 12px;
+            border-left: 3px solid #ccc;
+            background-color: #f9f9f9;
+            margin: 6px 0 6px 16px;
+            border-radius: 6px;
             font-size: 0.95rem;
         }
 
+        .reply strong {
+            display: inline-block;
+            margin-bottom: 4px;
+            color: #444;
+        }
+
+
         .comment-input, .reply-input {
             display: flex;
-            margin-top: 10px;
+            margin-top: 16px;
         }
 
         .comment-input input, .reply-input input {
             flex: 1;
-            padding: 8px;
-            border: none;
-            border-radius: 4px;
+            padding: 10px 14px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
             font-size: 1rem;
         }
 
         .comment-input button, .reply-input button {
             margin-left: 8px;
-            padding: 8px 12px;
+            padding: 10px 16px;
             border: none;
-            background-color: #444;
+            background-color: #333;
             color: white;
-            border-radius: 4px;
+            border-radius: 20px;
             cursor: pointer;
         }
 
         .reply-pagination {
             text-align: center;
-            padding: 8px;
+            padding: 10px;
             font-size: 0.85rem;
-            color: #aaa;
+            color: #888;
             cursor: pointer;
         }
+
+        .like-button[data-liked="true"] {
+            background-color: #ffdddd;
+            font-weight: bold;
+            color: #e60039;
+        }
     </style>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 </head>
 <body>
 <div class="container">
+    <input type="hidden" id="postId" th:value="${postId}" />
     <div id="post"></div>
     <div class="comment-section">
-        <h3>댓글</h3>
+        <h4>댓글</h4>
         <div class="comment-input">
-            <input type="text" placeholder="댓글달기" id="commentInput">
+            <input type="text" placeholder="댓글을 입력하세요" id="commentInput">
             <button onclick="submitComment()">게시</button>
         </div>
         <div id="comments"></div>
     </div>
 </div>
-
-<script>
-    const postId = 6;
-    const token = localStorage.getItem('token');
-
-    function escapeHtml(text) {
-        return $('<div>').text(text).html();
-    }
-
-    function loadPost() {
-        $.ajax({
-            url: `/posts/${postId}`,
-            type: 'GET',
-            success: function (post) {
-                const imageTag = post.imagePath ? `<img class="post-image" src="${post.imagePath}" onerror="this.style.display='none'">` : '';
-                const postHtml = `
-                    <div class="post-title">${post.nickname}</div>
-                    ${imageTag}
-                    <div class="post-content">${escapeHtml(post.postContent)}</div>
-                `;
-                $('#post').html(postHtml);
-            }
-        });
-    }
-
-    function loadComments() {
-        $.ajax({
-            url: `/comments?postId=${postId}&page=0&size=100`,
-            type: 'GET',
-            headers: { 'Authorization': `Bearer ${token}` },
-            success: function (response) {
-                const commentsHtml = response.content.map(comment => `
-                <div class="comment" data-comment-id="${comment.commentId}" data-nickname="${comment.nickName}">
-                    <strong>${escapeHtml(comment.nickName)}</strong><br>
-                    ${escapeHtml(comment.commentContent)}
-                    <div class="reply-toggle" onclick="toggleReplies(this, ${comment.commentId}, '${comment.nickName}')">
-                        답글 보기
-                    </div>
-                    <div class="reply-list" style="display:none;"></div>
-                    <div class="reply-input">
-                        <input type="text" placeholder="답글달기">
-                        <button onclick="submitReply(${comment.commentId}, '${comment.nickName}', this)">게시</button>
-                    </div>
-                </div>
-            `).join('');
-                $('#comments').html(commentsHtml);
-            }
-        });
-    }
-
-    function toggleReplies(buttonEl, parentCommentId) {
-        const $comment = $(buttonEl).closest('.comment');
-        const $replyList = $comment.find('.reply-list');
-
-        if ($replyList.is(':visible')) {
-            $replyList.slideUp();
-            $(buttonEl).text(`답글 보기`);
-        } else {
-            $replyList.empty();
-            loadReplies(parentCommentId, $replyList, 0);
-            $replyList.slideDown();
-            $(buttonEl).text(`답글 접기`);
-        }
-    }
-
-    function loadReplies(parentCommentId, $replyList, replyPage = 0) {
-        $.ajax({
-            url: `/comments?postId=${postId}&parentCommentId=${parentCommentId}&page=${replyPage}&size=5`,
-            type: 'GET',
-            headers: { 'Authorization': `Bearer ${token}` },
-            success: function (response) {
-                const repliesHtml = response.content.map(reply => `
-                <div class="reply">
-                    <strong>${escapeHtml(reply.nickName)}</strong><br>
-                    ${escapeHtml(reply.commentContent)}
-                </div>
-            `).join('');
-
-                let $section = $replyList.find('.reply-section');
-                if ($section.length === 0) {
-                    $section = $('<div class="reply-section"></div>').appendTo($replyList);
-                }
-                $section.append(repliesHtml);
-
-                $replyList.find('.reply-pagination').remove();
-                if (!response.last) {
-                    const moreBtn = $(`<div class="reply-pagination">답글 더보기</div>`);
-                    moreBtn.on('click', function () {
-                        loadReplies(parentCommentId, $replyList, replyPage + 1);
-                    });
-                    $replyList.append(moreBtn);
-                }
-            }
-        });
-    }
-
-
-    function submitComment() {
-        const content = $('#commentInput').val();
-        if (!content) return;
-
-        $.ajax({
-            url: '/comments',
-            type: 'POST',
-            contentType: 'application/json',
-            headers: { 'Authorization': `Bearer ${token}` },
-            data: JSON.stringify({
-                content: content,
-                postId: postId,
-                parentCommentId: null,
-                mentionUserId: null
-            }),
-            success: function () {
-                $('#commentInput').val('');
-                loadComments();
-            },
-            error: function (xhr) {
-                if (xhr.status === 401) {
-                    $('body').append(`
-                        <div style="text-align:center; margin-top:20px;">
-                            <p>로그인 후 이용해주세요.</p>
-                            <a href="/" style="color:#00aaff; text-decoration:underline;">홈으로 이동</a>
-                        </div>
-                    `);
-                }
-            }
-        });
-    }
-
-    function submitReply(parentCommentId, mentionNickName, buttonEl) {
-        const $input = $(buttonEl).siblings('input');
-        const content = $input.val();
-        if (!content) return;
-
-        $.ajax({
-            url: '/comments',
-            type: 'POST',
-            contentType: 'application/json',
-            headers: { 'Authorization': `Bearer ${token}` },
-            data: JSON.stringify({
-                content: `@${mentionNickName} ${content}`,
-                postId: postId,
-                parentCommentId: parentCommentId,
-                mentionUserId: null // 실제 시스템에서 mentionUserId 추출 필요 시 수정
-            }),
-            success: function () {
-                $input.val('');
-                const $replyList = $(buttonEl).closest('.comment').find('.reply-list').empty();
-                loadReplies(parentCommentId, $replyList, 0);
-            },
-            error: function (xhr) {
-                if (xhr.status === 401) {
-                    $('body').append(`
-                    <div style="text-align:center; margin-top:20px;">
-                        <p>로그인 후 이용해주세요.</p>
-                        <a href="/" style="color:#00aaff; text-decoration:underline;">홈으로 이동</a>
-                    </div>
-                `);
-                }
-            }
-        });
-    }
-
-    $(document).ready(function () {
-        loadPost();
-        loadComments();
-    });
-</script>
+<script src="/js/postDetail.js"></script>
 </body>
 </html>

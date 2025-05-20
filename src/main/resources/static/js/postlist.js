@@ -1,24 +1,26 @@
+// postlist.js
 const postGrid = document.getElementById('postGrid');
 const searchInput = document.getElementById('searchInput');
+const searchButton = document.getElementById('searchButton');
 let page = 0;
 let loading = false;
 let finished = false;
 
-const token = 'Bearer ' + localStorage.getItem("token");
-if (!token || token === "Bearer null") {
-    alert("로그인이 필요합니다.");
-    window.location.href = "/";
-}
+// 검색 버튼 클릭 또는 엔터 입력 시 검색 실행
+searchButton.addEventListener('click', handleSearch);
+searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        handleSearch();
+    }
+});
 
-// 검색 키워드 기반 필터링
-searchInput.addEventListener('input', () => {
+function handleSearch() {
     page = 0;
     finished = false;
     postGrid.innerHTML = '';
     fetchPosts();
-});
+}
 
-// 스크롤 이벤트로 무한 스크롤 구현
 window.addEventListener('scroll', () => {
     if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100 && !loading && !finished) {
         fetchPosts();
@@ -28,22 +30,24 @@ window.addEventListener('scroll', () => {
 function fetchPosts() {
     loading = true;
     const keyword = searchInput.value.trim();
+    const params = new URLSearchParams({
+        page,
+        size: 6,
+        title: keyword
+    });
 
-    fetch(`/posts?page=${page}&size=6&keyword=${encodeURIComponent(keyword)}`, {
-        headers: {
-            Authorization: 'Bearer ' + token
-        }
-    })
+    fetch(`/posts?${params.toString()}`)
         .then(res => {
             if (!res.ok) throw new Error('게시글 로딩 실패');
             return res.json();
         })
         .then(data => {
-            if (data.length === 0) {
+            const posts = data.content;
+            if (posts.length === 0) {
                 finished = true;
                 return;
             }
-            data.forEach(post => renderPostCard(post));
+            posts.forEach(renderPostCard);
             page++;
         })
         .catch(err => console.error(err))
@@ -54,23 +58,21 @@ function renderPostCard(post) {
     const card = document.createElement('div');
     card.className = 'post-card';
     card.onclick = () => {
-        location.href = `/postdetail.html?postId=${post.id}`;
+        location.href = `/postDetail?postId=${post.postId}`;
     };
 
+    const thumbnailUrl = `/posts/image/${post.postId}`;
+
     card.innerHTML = `
-    <img class="thumbnail" src="${post.thumbnailUrl || '/assets/default-thumbnail.jpg'}" alt="썸네일">
+    <img class="thumbnail" src="${thumbnailUrl}" alt="썸네일">
     <div class="post-content">
-      <div class="post-user">
-        <img src="${post.userProfileUrl || '/assets/default-profile.png'}" alt="프로필">
-        <span>${post.nickname}</span>
-      </div>
-      <div class="post-title">${post.title}</div>
+      <div class="post-title">${post.postTitle}</div>
       <div class="post-meta">
-        <span>❤ ${post.likeCount}</span>
-        <span>${post.updatedAt || post.createdAt}</span>
+        <span>${post.nickname}</span>
+        <span>${new Date(post.updatedAt).toLocaleString()}</span>
       </div>
     </div>
-  `;
+    `;
 
     postGrid.appendChild(card);
 }

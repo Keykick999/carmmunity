@@ -77,13 +77,34 @@ public class CommentService {
     // 게시글 id로 댓글 조회
     @Transactional(readOnly = true)
     public Page<CommentSearchResponse> getComments(Integer postId, Integer parentCommentId, int page, int size, CommentOrderBy orderBy, Sort.Direction direction) {
-        Optional<User> user = userService.getUserIfAuthenticated();
+        Optional<User> userOpt = userService.getUserIfAuthenticated();
+        String userId = userOpt.map(User::getUserId).orElse(null);
 
         Sort sort = Sort.by(direction, orderBy.getField());
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        return commentRepository.findCommentsByPostAndParent(postId, parentCommentId, user.get().getUserId(), pageable);
+        Page<Comment> commentPage = commentRepository.findCommentsByPostAndParent(postId, parentCommentId, pageable);
+
+        return commentPage.map(comment -> {
+            boolean liked = false;
+            if (userId != null) {
+                CommentLikeId id = new CommentLikeId(comment.getCommentId(), userId);
+                liked = commentLikeRepository.findById(id)
+                        .map(CommentLike::getLikeStatus)
+                        .orElse(false);
+            }
+
+            return new CommentSearchResponse(
+                    comment.getCommentId(),
+                    comment.getCommentContent(),
+                    comment.getTotalLike(),
+                    userId != null && userId.equals(comment.getUser().getUserId()),
+                    comment.getUser().getNickname(),
+                    liked
+            );
+        });
     }
+
 
 
 

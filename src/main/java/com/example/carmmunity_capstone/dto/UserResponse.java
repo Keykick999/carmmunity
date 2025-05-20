@@ -15,4 +15,6 @@ public class UserResponse {
     private String phone;
     private String name;
     private LocalDateTime createdAt;
+    private String introduction;
+    private String profileImagePath;
 }

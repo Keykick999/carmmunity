@@ -1,6 +1,8 @@
 package com.example.carmmunity_capstone.controller;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 
 @Controller
@@ -37,7 +39,14 @@ public class HomeController {
     }
 
     @GetMapping("/postDetail")
-    public String postDetail() {
+    public String postDetail(@RequestParam("postId") Integer postId, Model model) {
+        System.out.println("postId = " + postId);
+        model.addAttribute("postId", postId);
         return "html/postDetail";
+    }
+
+    @GetMapping("/postCreate")
+    public String postCreate() {
+        return "html/postCreate";
     }
 }

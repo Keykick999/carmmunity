@@ -9,6 +9,9 @@ import com.example.carmmunity_capstone.exception.PostNotFoundException;
 import com.example.carmmunity_capstone.exception.UnAuthorizedAccessException;
 import com.example.carmmunity_capstone.repository.PostLikeRepository;
 import com.example.carmmunity_capstone.repository.PostRepository;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
@@ -27,8 +31,13 @@ import java.util.UUID;
 public class PostService {
 
     private final PostRepository postRepository;
+
     private final PostLikeRepository postLikeRepository;
+
     private final UserService userService;
+
+    @Value("${thumbnail.default-path}")
+    private String defaultThumbnailPath;
 
     public PostService(PostRepository postRepository, PostLikeRepository postLikeRepository, UserService userService) {
         this.postRepository = postRepository;
@@ -40,9 +49,8 @@ public class PostService {
     // TODO 전부 user 관련 부분 추가해야 관련 저장 값이나 권한 확인 전부
     // 게시글 저장
     @Transactional
-    public void save( PostRequest postSaveRequest, MultipartFile postImage) {
+    public void save( PostRequest postSaveRequest, MultipartFile postImage, MultipartFile thumbnailImage) {
         User user = userService.getAuthenticatedUser();
-        System.out.println("user = " + user);
 
 
         // 게시글 저장
@@ -52,8 +60,8 @@ public class PostService {
                 .totalLike(0)
                 .user(user)
                 .build();
-        post = applyPostData(post, postSaveRequest, postImage);
-        System.out.println("post = " + post);
+        post = applyPostData(post, postSaveRequest, postImage, thumbnailImage);
+
 
         postRepository.save(post);
     }
@@ -83,13 +91,37 @@ public class PostService {
     // 게시글 id로 조회
     @Transactional(readOnly = true)
     public PostSearchResponse findById(int postId) {
-        return postRepository.findPostById(postId).orElseThrow(() -> new PostNotFoundException("해당 게시글을 찾을 수 없습니다"));
+        User currentUser = userService.getAuthenticatedUser();
+
+        // 게시글 조회
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new PostNotFoundException("해당 게시글을 찾을 수 없습니다."));
+
+        // 좋아요 여부 확인
+        PostLikeId likeId = new PostLikeId(postId, currentUser.getUserId());
+        boolean liked = postLikeRepository.findById(likeId)
+                .map(PostLike::getLikeStatus)
+                .orElse(false);
+
+        return new PostSearchResponse(
+                post.getPostId(),
+                post.getPostTitle(),
+                post.getPostType(),
+                post.getPostContent(),
+                post.getImagePath(),
+                post.getThumbnailPath(),
+                post.getTotalLike(),
+                post.getUser().getNickname(),
+                post.getUpdatedAt(),
+                liked
+        );
     }
+
 
 
     // 게시글 수정(저장이랑 동일하게 처리?)
     @Transactional
-    public void update(Integer postId, PostRequest updateRequest, MultipartFile postImage) {
+    public void update(Integer postId, PostRequest updateRequest, MultipartFile postImage, MultipartFile thumbnailImage) {
         User user = userService.getAuthenticatedUser();
 
         // 게시글 존재 확인
@@ -101,7 +133,7 @@ public class PostService {
         }
 
         // 게시글 수정 후 저장
-        post = applyPostData(post, updateRequest, postImage);
+        post = applyPostData(post, updateRequest, postImage, thumbnailImage);
         postRepository.save(post);
     }
 
@@ -167,15 +199,23 @@ public class PostService {
 
 
     // 게시글 요청 값 설정 및 이미지 저장
-    public Post applyPostData(Post post, PostRequest request, MultipartFile imageFile) {
-        // 이미지 저장
-        String savedPath = saveImage(imageFile);
+    public Post applyPostData(Post post, PostRequest request, MultipartFile imageFile, MultipartFile thumbnailImage) {
+        // 메인 이미지 저장
+        String savedImagePath = saveImage(imageFile);
+        post.setImagePath(savedImagePath);
 
-        // 게시글 필드 값 수정
+        // 썸네일 이미지 저장 (없으면 기본값 적용)
+        String savedThumbnailPath = saveImage(thumbnailImage);
+        if (savedThumbnailPath == null || savedThumbnailPath.isBlank()) {
+            post.setThumbnailPath(defaultThumbnailPath);
+        } else {
+            post.setThumbnailPath(savedThumbnailPath);
+        }
+
+        // 나머지 게시글 정보 설정
         post.setPostTitle(request.getTitle());
         post.setPostContent(request.getContent());
         post.setPostType(request.getPostType());
-        post.setImagePath(savedPath);
 
         return post;
     }
@@ -214,17 +254,19 @@ public class PostService {
                 })
                 .orElse(new PostLike(id, true));
     }
+
+
+    @Transactional(readOnly = true)
+    public Resource getPostThumbnail(Integer postId) throws MalformedURLException {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new PostNotFoundException("해당 게시글을 찾을 수 없습니다."));
+
+        String imagePath = post.getThumbnailPath();
+        if (imagePath == null || imagePath.isBlank()) {
+            throw new PostNotFoundException("게시글에 이미지가 존재하지 않습니다.");
+        }
+
+        Path path = Paths.get(imagePath);
+        return new UrlResource(path.toUri());
+    }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

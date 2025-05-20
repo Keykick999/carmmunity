@@ -29,4 +29,6 @@ public class PostSearchResponse {
     private String nickname;
 
     private LocalDateTime updatedAt;
+
+    private boolean likedByCurrentUser;
 }

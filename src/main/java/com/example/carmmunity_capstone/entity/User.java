@@ -36,7 +36,17 @@ public class User {
     @Column(name = "Name", nullable = false, length = 50)
     private String name;
 
+    // ✅ 추가: 자기소개
+    @Column(name = "Introduction", length = 1000)
+    private String introduction;
+
+    // ✅ 추가: 프로필 이미지 경로
+    @Column(name = "Profile_Image_Path")
+    private String profileImagePath;
+
     @CreatedDate
     @Column(name = "Created_At")
     private LocalDateTime createdAt;
+
+
 }

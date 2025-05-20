@@ -14,4 +14,5 @@ public class CommentSearchResponse {
     private Integer totalLike = 0;
     private boolean isAuthor;
     private String nickName;
+    private boolean likedByCurrentUser;
 }

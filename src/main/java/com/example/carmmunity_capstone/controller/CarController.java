@@ -30,6 +30,7 @@ public class CarController {
     // 튜닝 차량 조회
     @GetMapping
     public ResponseEntity<Resource> getTunedCar(@RequestParam("carId") Integer carId) throws MalformedURLException {
+        System.out.println("carId = " + carId);
         return ResponseEntity.ok(carService.getTunedCar(carId));
     }
 }

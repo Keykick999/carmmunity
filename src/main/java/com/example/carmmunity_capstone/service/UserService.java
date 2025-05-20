@@ -49,6 +49,8 @@ public class UserService {
                 .email(request.getEmail())
                 .phone(request.getPhone())
                 .name(request.getName())
+                .introduction("자기소개가 아직 없습니다.")
+                .profileImagePath("/image/UserImageDefault.png")
                 .build();
 
         userRepository.save(user);
@@ -80,7 +82,9 @@ public class UserService {
                 user.getEmail(),
                 user.getPhone(),
                 user.getName(),
-                user.getCreatedAt()
+                user.getCreatedAt(),
+                user.getIntroduction(),
+                user.getProfileImagePath()
         );
     }
 
@@ -92,7 +96,14 @@ public class UserService {
 
         user.setNickname(request.getNickname());
         user.setPhone(request.getPhone());
+
+        // ✅ 추가된 필드 처리
+        user.setIntroduction(request.getIntroduction());
+        user.setProfileImagePath(request.getProfileImagePath());
+
         userRepository.save(user);
+
+
     }
 
 

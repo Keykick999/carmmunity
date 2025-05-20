@@ -60,7 +60,7 @@
 
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            grid-template-columns: repeat(3, 1fr); /* ← 여기 수정 */
             gap: 20px;
             padding: 20px;
             max-width: 1400px;
@@ -124,15 +124,21 @@
 <body>
 <header class="header">
     <div class="logo">
-        <img src="/logo.PNG" alt="로고">
+        <img src="/image/logo.png" alt="로고">
         Carmmunity
     </div>
     <img src="/assets/default-profile.png" class="user-profile" alt="유저 프로필" onclick="location.href='/main.html'">
 </header>
 
 <div class="search-container">
-    <input type="text" id="searchInput" class="search-input" placeholder="게시글 또는 닉네임 검색...">
+    <div style="display: flex; gap: 10px; width: 100%; max-width: 600px;">
+        <input type="text" id="searchInput" class="search-input" placeholder="게시글 또는 닉네임 검색..." />
+        <button id="searchButton" style="border: none; background: none; cursor: pointer;">
+            🔍
+        </button>
+    </div>
 </div>
+
 
 <main class="grid" id="postGrid">
     <!-- 게시글 카드가 여기에 동적으로 들어감 -->

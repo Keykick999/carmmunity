@@ -24,7 +24,6 @@ public class UserController {
     @PostMapping
     public ResponseEntity<Void> register(@RequestBody @Valid UserJoinRequest request) {
         userService.register(request);
-        System.out.println("request = " + request);
         return ResponseEntity.ok().build();
     }
 
@@ -36,18 +35,21 @@ public class UserController {
     }
 
     // 회원 정보 조회
-    @GetMapping("/{id}")
-    public ResponseEntity<UserResponse> getUserInfo(@PathVariable("id") String userId) {
+    @GetMapping("/info")
+    public ResponseEntity<UserResponse> getMyInfo(@RequestHeader("Authorization") String token) {
+        String userId = jwtTokenProvider.getUserId(token.replace("Bearer ", ""));
         return ResponseEntity.ok(userService.getUserInfo(userId));
     }
 
     // 회원 정보 수정
-    @PutMapping("/{id}")
-    public ResponseEntity<Void> updateUserInfo(@PathVariable("id") String userId,
-                                               @RequestBody @Valid UserUpdateRequest request) {
+    @PutMapping("/info")
+    public ResponseEntity<Void> updateMyInfo(@RequestHeader("Authorization") String token,
+                                             @RequestBody @Valid UserUpdateRequest request) {
+        String userId = jwtTokenProvider.getUserId(token.replace("Bearer ", ""));
         userService.updateUserInfo(userId, request);
         return ResponseEntity.ok().build();
     }
+
 
     // 아이디 찾기
     @PostMapping("/find-id")
@@ -55,6 +57,8 @@ public class UserController {
         String userId = userService.findIdByEmail(request.getEmail());
         return ResponseEntity.ok(Map.of("userId", userId));
     }
+
+
 
     /*
     // 비밀번호 재설정 요청 - 인증 코드 전송만 수행

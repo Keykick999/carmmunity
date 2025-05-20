@@ -10,6 +10,8 @@ public class UserUpdateRequest {
 
     @NotBlank(message = "닉네임은 필수입니다.")
     private String nickname;
-
     private String phone;
+
+    private String introduction;       // ✅ 추가
+    private String profileImagePath;
 }

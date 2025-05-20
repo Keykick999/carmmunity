@@ -2,34 +2,15 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'GLTFLoader';
 import { OrbitControls } from 'OrbitControls';
 
-const token = 'Bearer ' + localStorage.getItem("token");
-if (!token || token === "Bearer null") {
-    alert("로그인이 필요합니다.");
-    window.location.href = "/";
-}
 
-// 사용자 정보 렌더링
-const nickname = localStorage.getItem("nickname");
-const name = localStorage.getItem("name");
-const email = localStorage.getItem("email");
-const phone = localStorage.getItem("phone");
-const intro = localStorage.getItem("intro") || "자기소개가 아직 없습니다.";
 
-document.querySelector(".user-info h5").textContent = nickname;
-document.querySelector(".user-info").innerHTML += `
-  <p>이름: ${name}</p>
-  <p>전화번호: ${phone}</p>
-  <p>이메일: ${email}</p>
-  <div class="user-intro">${intro}</div>
-`;
-
+// 3D Viewer (생략 없이 유지)
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xf5f6fa);
-
 const loader = new THREE.TextureLoader();
-loader.load('/garage.jpg', (texture) => {
-    scene.background = texture;
-});
+// loader.load('/garage.jpg', (texture) => {
+//     scene.background = texture;
+// });
 
 const camera = new THREE.PerspectiveCamera(75, 900 / 500, 0.1, 1000);
 camera.position.set(0, 2, 20);
@@ -47,6 +28,7 @@ dirLight.position.set(5, 10, 7.5);
 scene.add(dirLight);
 
 let currentModel;
+const token = 'Bearer ' + localStorage.getItem("token");
 window.loadCar = function (slotId) {
     const modelUrl = `http://localhost:8080/cars?carId=${slotId}`;
     const loader = new GLTFLoader();
