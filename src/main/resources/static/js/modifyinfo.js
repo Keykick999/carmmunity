@@ -1,14 +1,13 @@
-const token = 'Bearer ' + localStorage.getItem("token");
-
-if (!token) {
-    alert("로그인이 필요합니다.");
-    window.location.href = "/login.html"
-}
-
 document.addEventListener("DOMContentLoaded", async () => {
+    const rawToken = localStorage.getItem("token");
 
+    if (!rawToken) {
+        alert("로그인이 필요합니다.");
+        window.location.href = "/login";
+        return;
+    }
 
-
+    const token = 'Bearer ' + rawToken;
 
     const preview = document.getElementById('previewImage');
     const uploadInput = document.getElementById('uploadImage');
@@ -16,24 +15,28 @@ document.addEventListener("DOMContentLoaded", async () => {
     const nicknameInput = document.getElementById("nickname");
     const phoneInput = document.getElementById("phone");
     const introInput = document.getElementById("introduction");
-
     const modifyForm = document.getElementById("modifyForm");
 
     // 🔹 기존 회원 정보 불러오기
-    const response = await fetch("/users/info", {
-        method: "GET",
-        headers: { "Authorization": "Bearer " + token }
-    });
+    try {
+        const response = await fetch("/users/info", {
+            method: "GET",
+            headers: { "Authorization": token }
+        });
 
-    if (response.ok) {
+        if (!response.ok) throw new Error("회원 정보를 불러올 수 없습니다.");
+
         const data = await response.json();
         nicknameInput.value = data.nickname;
         phoneInput.value = data.phone || "";
         introInput.value = data.introduction || "";
         preview.src = data.profileImagePath;
+    } catch (err) {
+        alert(err.message);
+        return;
     }
 
-    // 🔹 이미지 업로드 미리보기
+    // 🔹 이미지 업로드 → 미리보기로 표시
     uploadInput.addEventListener("change", () => {
         const file = uploadInput.files[0];
         if (file) {
@@ -46,7 +49,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    // 🔹 기본 이미지 선택
+    // 🔹 기본 이미지 클릭 시 미리보기로 반영
     defaultImages.forEach(img => {
         img.addEventListener("click", () => {
             preview.src = img.src;
@@ -60,12 +63,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         defaultImages.forEach(img => img.classList.remove("selected"));
     }
 
-    // 🔹 저장 버튼 동작
+    // 🔹 저장 버튼 제출 처리
     modifyForm.addEventListener("submit", async (e) => {
         e.preventDefault();
+
         const file = uploadInput.files[0];
         const selectedDefault = document.querySelector('.default-images img.selected');
 
+        // ✅ 업로드 이미지가 있는 경우
         if (file) {
             const formData = new FormData();
             formData.append("profileImage", file);
@@ -75,18 +80,22 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             const res = await fetch("/users/update-profile", {
                 method: "POST",
-                headers: { "Authorization": "Bearer " + token },
+                headers: {
+                    "Authorization": token
+                },
                 body: formData
             });
 
             if (res.ok) {
                 alert("회원 정보가 수정되었습니다.");
-                window.location.href = "/main.html";
+                window.location.href = "/main";
             } else {
                 alert("수정 실패");
             }
 
-        } else if (selectedDefault) {
+        }
+        // ✅ 기본 이미지만 선택한 경우
+        else if (selectedDefault) {
             const json = {
                 nickname: nicknameInput.value,
                 phone: phoneInput.value,
@@ -97,7 +106,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             const res = await fetch("/users/info", {
                 method: "PUT",
                 headers: {
-                    "Authorization": "Bearer " + token,
+                    "Authorization": token,
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify(json)
@@ -105,11 +114,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             if (res.ok) {
                 alert("회원 정보가 수정되었습니다.");
-                window.location.href = "/main.html";
+                window.location.href = "/main";
             } else {
                 alert("수정 실패");
             }
-        } else {
+        }
+        // ❌ 이미지가 선택되지 않은 경우
+        else {
             alert("프로필 이미지를 선택하거나 업로드해주세요.");
         }
     });

@@ -159,36 +159,30 @@ public class PostService {
 
     // 이미지 저장
     public String saveImage(MultipartFile imageFile) {
-        // 이미지 저장할 경로 설정
-        Path path = Paths.get("C:", "image examples");
+        // 1. 저장할 실제 경로
+        Path path = Paths.get("C:", "uploads"); // 경로 변경: "C:/uploads"
         String uploadDir = path.toString();
 
         String storedFileName = null;
 
-        // 이미지가 없거나 비어있는 경우 아니면 저장
-        // 파일명(파일명 + 확장자) + 경로 설정 후 저장
         if (imageFile != null && !imageFile.isEmpty()) {
             try {
-                // 1. 원본 파일명
+                // 2. 파일명 처리
                 String originalFileName = imageFile.getOriginalFilename();
-
-                // 2. 확장자 추출
                 String ext = originalFileName.substring(originalFileName.lastIndexOf("."));
-
-                // 3. UUID로 저장할 파일 이름 생성
                 storedFileName = UUID.randomUUID().toString() + ext;
 
-                // 4. 저장할 경로 생성
+                // 3. 실제 저장
                 File dest = new File(uploadDir, storedFileName);
                 if (!dest.getParentFile().exists()) {
-                    dest.getParentFile().mkdirs(); // 폴더 없으면 생성
+                    dest.getParentFile().mkdirs();
                 }
-
-                // 5. 실제 파일 저장
                 imageFile.transferTo(dest);
 
-                System.out.println("이미지 저장 성공: " + dest.getAbsolutePath());
-                return dest.getAbsolutePath();
+
+                // ✅ 4. DB에는 상대 경로로 저장
+                return "/uploads/" + storedFileName;
+
             } catch (IOException e) {
                 throw new RuntimeException("이미지 저장 중 오류 발생", e);
             }

@@ -6,7 +6,6 @@ import com.example.carmmunity_capstone.dto.*;
 import com.example.carmmunity_capstone.entity.User;
 import com.example.carmmunity_capstone.exception.UnauthenticatedUserException;
 import com.example.carmmunity_capstone.repository.UserRepository;
-import com.example.carmmunity_capstone.util.FileUpload;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -17,7 +16,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Optional;
+import java.util.UUID;
 
 
 @Service
@@ -29,7 +33,6 @@ public class UserService {
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationManager authenticationManager;
     private final EmailVerificationService emailVerificationService;
-    private FileUpload fileUpload;
 
     // 회원가입 처리
     @Transactional
@@ -110,28 +113,61 @@ public class UserService {
     }
 
     //회원 정보 수정 - 유저 업로드 이미지 기준
-    @Transactional
-    public void updateUserProfileWithImage(String userId, String nickname, String name, String phone, String intro,
+    @Transactional // ✅ 트랜잭션 보장
+    public void updateUserProfileWithImage(String userId, String nickname, String phone, String introduction,
                                            MultipartFile profileImage, String defaultImage) {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
         user.setNickname(nickname);
-        user.setName(name);
         user.setPhone(phone);
-        user.setIntroduction(intro);
+        user.setIntroduction(introduction);
 
-        if (profileImage != null && !profileImage.isEmpty()) {
-            String path = fileUpload.store(profileImage);
-            user.setProfileImagePath(path);
+        String imagePath = saveImage(profileImage);
+
+        if (imagePath != null) {
+            user.setProfileImagePath(imagePath); // 사용자 이미지 경로 저장
         } else if (defaultImage != null) {
-            user.setProfileImagePath(defaultImage);
+            user.setProfileImagePath(defaultImage); // 기본 이미지 저장
         }
 
         userRepository.save(user);
     }
 
+    // 이미지 저장
+    public String saveImage(MultipartFile imageFile) {
+        // 1. 저장할 실제 경로
+        Path path = Paths.get("C:", "uploads"); // 경로 변경: "C:/uploads"
+        String uploadDir = path.toString();
+
+        String storedFileName = null;
+
+        if (imageFile != null && !imageFile.isEmpty()) {
+            try {
+                // 2. 파일명 처리
+                String originalFileName = imageFile.getOriginalFilename();
+                String ext = originalFileName.substring(originalFileName.lastIndexOf("."));
+                storedFileName = UUID.randomUUID().toString() + ext;
+
+                // 3. 실제 저장
+                File dest = new File(uploadDir, storedFileName);
+                if (!dest.getParentFile().exists()) {
+                    dest.getParentFile().mkdirs();
+                }
+                imageFile.transferTo(dest);
+
+
+                // ✅ 4. DB에는 상대 경로로 저장
+                return "/uploads/" + storedFileName;
+
+            } catch (IOException e) {
+                throw new RuntimeException("이미지 저장 중 오류 발생", e);
+            }
+        }
+
+        return null;
+    }
 
 
     // 아이디 찾기

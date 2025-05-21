@@ -56,14 +56,13 @@ public class UserController {
     public ResponseEntity<Void> updateProfile(
             @RequestHeader("Authorization") String token,
             @RequestParam("nickname") String nickname,
-            @RequestParam("name") String name,
             @RequestParam(value = "phone", required = false) String phone,
             @RequestParam(value = "introduction", required = false) String introduction,
             @RequestParam(value = "profileImage", required = false) MultipartFile profileImage,
             @RequestParam(value = "defaultImage", required = false) String defaultImage
     ) {
         String userId = jwtTokenProvider.getUserId(token.replace("Bearer ", ""));
-        userService.updateUserProfileWithImage(userId, nickname, name, phone, introduction, profileImage, defaultImage);
+        userService.updateUserProfileWithImage(userId, nickname, phone, introduction, profileImage, defaultImage);
         return ResponseEntity.ok().build();
     }
 

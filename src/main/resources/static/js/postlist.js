@@ -1,4 +1,3 @@
-// postlist.js
 const postGrid = document.getElementById('postGrid');
 const searchInput = document.getElementById('searchInput');
 const searchButton = document.getElementById('searchButton');
@@ -6,7 +5,36 @@ let page = 0;
 let loading = false;
 let finished = false;
 
-// 검색 버튼 클릭 또는 엔터 입력 시 검색 실행
+// ✅ 현재 검색어 기억
+let currentKeyword = '';
+
+// ✅ 감시 대상
+const observerTarget = document.getElementById('observerTarget');
+
+// ✅ 프로필 이미지 설정 (초기 실행)
+document.addEventListener("DOMContentLoaded", () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    fetch("/users/info", {
+        headers: {
+            "Authorization": `Bearer ${token}`
+        }
+    })
+        .then(res => {
+            if (!res.ok) throw new Error("회원 정보 조회 실패");
+            return res.json();
+        })
+        .then(user => {
+            const img = document.getElementById("profileImage");
+            if (user.profileImagePath) {
+                img.src = user.profileImagePath;
+            }
+        })
+        .catch(err => console.error("❌ 프로필 이미지 로딩 실패:", err));
+});
+
+// ✅ 검색 이벤트
 searchButton.addEventListener('click', handleSearch);
 searchInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
@@ -18,22 +46,31 @@ function handleSearch() {
     page = 0;
     finished = false;
     postGrid.innerHTML = '';
+    currentKeyword = searchInput.value.trim();
     fetchPosts();
 }
 
-window.addEventListener('scroll', () => {
-    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100 && !loading && !finished) {
+// ✅ IntersectionObserver 설정
+const observer = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting && !loading && !finished) {
+        console.log('✅ observerTarget이 화면에 나타났습니다. 다음 페이지 로딩 시도!');
         fetchPosts();
     }
+}, {
+    root: null,
+    threshold: 0.1
 });
+observer.observe(observerTarget); // 감시 시작
 
+// ✅ 게시글 불러오기
 function fetchPosts() {
     loading = true;
-    const keyword = searchInput.value.trim();
+    console.log('📨 fetchPosts() 호출. page:', page, 'keyword:', currentKeyword);
+
     const params = new URLSearchParams({
         page,
         size: 6,
-        title: keyword
+        title: currentKeyword
     });
 
     fetch(`/posts?${params.toString()}`)
@@ -43,17 +80,21 @@ function fetchPosts() {
         })
         .then(data => {
             const posts = data.content;
+
             if (posts.length === 0) {
                 finished = true;
+                console.log('⛔ 더 이상 불러올 게시글이 없습니다.');
                 return;
             }
+
             posts.forEach(renderPostCard);
             page++;
         })
-        .catch(err => console.error(err))
+        .catch(err => console.error('❌ 게시글 불러오기 실패:', err))
         .finally(() => loading = false);
 }
 
+// ✅ 게시글 카드 렌더링
 function renderPostCard(post) {
     const card = document.createElement('div');
     card.className = 'post-card';
@@ -64,18 +105,18 @@ function renderPostCard(post) {
     const thumbnailUrl = `/posts/image/${post.postId}`;
 
     card.innerHTML = `
-    <img class="thumbnail" src="${thumbnailUrl}" alt="썸네일">
-    <div class="post-content">
-      <div class="post-title">${post.postTitle}</div>
-      <div class="post-meta">
-        <span>${post.nickname}</span>
-        <span>${new Date(post.updatedAt).toLocaleString()}</span>
-      </div>
-    </div>
+        <img class="thumbnail" src="${thumbnailUrl}" alt="썸네일">
+        <div class="post-content">
+            <div class="post-title">${post.postTitle}</div>
+            <div class="post-meta">
+                <span>${post.nickname}</span>
+                <span>${new Date(post.updatedAt).toLocaleString()}</span>
+            </div>
+        </div>
     `;
 
     postGrid.appendChild(card);
 }
 
-// 초기 로딩
-fetchPosts();
+// ✅ 페이지 진입 시 첫 로딩
+handleSearch();

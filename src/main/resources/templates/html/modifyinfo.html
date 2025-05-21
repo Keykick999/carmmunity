@@ -83,14 +83,14 @@
     <form id="modifyForm" enctype="multipart/form-data">
         <label class="form-label" for="uploadImage">프로필 이미지 업로드</label>
         <input type="file" class="form-control" id="uploadImage" name="profileImage" accept="image/*" />
-        <img id="previewImage" class="image-preview" src="/static/image/default1.png" alt="미리보기" />
+        <img id="previewImage" class="image-preview" src="" alt="미리보기" />
 
         <label class="form-label">기본 이미지 선택</label>
         <div class="default-images" id="defaultImageContainer">
-            <img src="/static/image/UserImage1.png" alt="기본이미지1">
-            <img src="/static/image/UserImage2.png" alt="기본이미지2">
-            <img src="/static/image/UserImage3.png" alt="기본이미지3">
-            <img src="/static/image/UserImage4.png" alt="기본이미지4">
+            <img src="/image/UserImage1.png" alt="기본이미지1">
+            <img src="/image/UserImage2.png" alt="기본이미지2">
+            <img src="/image/UserImage3.png" alt="기본이미지3">
+            <img src="/image/UserImage4.png" alt="기본이미지4">
 
         </div>
 
@@ -104,7 +104,7 @@
         <textarea class="form-control" id="introduction" name="introduction" rows="3"></textarea>
 
         <div class="btn-group">
-            <button type="button" class="btn btn-cancel" onclick="location.href='/main.html'">취소</button>
+            <button type="button" class="btn btn-cancel" onclick="location.href='/main'">취소</button>
             <button type="submit" class="btn btn-save">저장</button>
         </div>
     </form>

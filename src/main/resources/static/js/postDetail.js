@@ -1,6 +1,32 @@
 const postId = document.getElementById("postId").value;
 const token = localStorage.getItem('token');
 
+function loadUserProfileImage() {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    fetch("/users/info", {
+        method: "GET",
+        headers: {
+            "Authorization": `Bearer ${token}`
+        }
+    })
+        .then(res => {
+            if (!res.ok) throw new Error("회원 정보 조회 실패");
+            return res.json();
+        })
+        .then(user => {
+            const img = document.getElementById("profileImage");
+            if (user.profileImagePath) {
+                img.src = user.profileImagePath;
+            }
+        })
+        .catch(err => {
+            console.error("❌ 프로필 이미지 로딩 실패:", err);
+        });
+}
+
+
 function escapeHtml(text) {
 return $('<div>').text(text).html();
 }
@@ -15,6 +41,7 @@ function loadPost() {
             'Authorization': `Bearer ${token}`
         },
         success: function (post) {
+            console.log(post.imagePath);
             const imageTag = post.imagePath ? `<img class="post-image" src="${post.imagePath}" onerror="this.style.display='none'">` : '';
 
             const isLiked = post.likedByCurrentUser;
@@ -233,4 +260,5 @@ function submitComment() {
     $(document).ready(function () {
     loadPost();
     loadComments();
+    loadUserProfileImage();
 });
