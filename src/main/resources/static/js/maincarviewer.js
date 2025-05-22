@@ -2,53 +2,53 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'GLTFLoader';
 import { OrbitControls } from 'OrbitControls';
 
-
-
 console.log("THREE 확인:", THREE);
 console.log("GLTFLoader 확인:", GLTFLoader);
 console.log("OrbitControls 확인:", OrbitControls);
 
-
 const container = document.querySelector('.viewer-container');
-
-// 반응형 렌더링 크기
 const width = container.clientWidth;
 const height = container.clientHeight;
+const aspect = width / height;
 
-// 씬 설정
+// 씬 생성
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xf5f6fa);
 
-// 카메라 설정
-const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
-camera.position.set(0, 2, 5);
+// OrthographicCamera 사용 (크기 고정)
+const d = 4; // zoom 비율
+const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 0.1, 1000);
+camera.position.set(0, 1.5, 6);
+camera.lookAt(0, 0, 0);
 
-// 렌더러 설정
+// 렌더러 생성 및 색상 보정
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(width, height);
 renderer.setPixelRatio(window.devicePixelRatio);
+renderer.outputEncoding = THREE.sRGBEncoding;
 container.appendChild(renderer.domElement);
 
-// 조명 설정
-const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
-const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
-directionalLight.position.set(5, 10, 7.5);
+// 밝은 조명 설정 (BMW 느낌)
+const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
+const directionalLight = new THREE.DirectionalLight(0xffffff, 2.0);
+directionalLight.position.set(10, 10, 10);
 scene.add(ambientLight, directionalLight);
 
-// OrbitControls
+// OrbitControls 설정
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
-controls.target.set(0, 1, 0); // 차량 중심
-controls.minDistance = 3;
-controls.maxDistance = 8;
-controls.maxPolarAngle = Math.PI; // ✅ 위아래 자유 회전 허용
+controls.dampingFactor = 0.1;
+controls.enableZoom = false;
+controls.minPolarAngle = Math.PI / 2;
+controls.maxPolarAngle = Math.PI / 2;
 
+// 현재 로딩된 차량 모델
 let currentModel = null;
 const token = 'Bearer ' + localStorage.getItem("token");
 
 // 차량 로딩 함수
 function loadCar(slotId) {
-    alert(slotId);
+    alert(`슬롯 ${slotId} 차량 로딩 중...`);
     const modelUrl = `http://localhost:8080/cars?carId=${slotId}`;
     const loader = new GLTFLoader();
 
@@ -70,11 +70,24 @@ function loadCar(slotId) {
                     }
                 });
             }
+
             loader.parse(buffer, '', (gltf) => {
                 currentModel = gltf.scene;
-                currentModel.rotation.y = Math.PI;
-                currentModel.position.set(0, 0.1, 0);
+
+                const box = new THREE.Box3().setFromObject(currentModel);
+                const center = box.getCenter(new THREE.Vector3());
+                const size = box.getSize(new THREE.Vector3());
+
+                // 차량 중앙 정렬 + 화면에 더 꽉 차도록 크기 조정
+                currentModel.position.sub(center);
+                currentModel.position.y -= size.y * 0.6;
+                currentModel.scale.set(0.8, 0.8, 0.8); // 더 키움
+
                 scene.add(currentModel);
+
+                // 회전 중심을 화면 하단 기준으로 보정
+                controls.target.set(0, -size.y * 0.3, 0);
+                controls.update();
             });
         })
         .catch(err => {
@@ -91,14 +104,19 @@ function animate() {
 }
 animate();
 
-// 기본 차량 로딩 (slot 1)
-loadCar(1);
-
-// 반응형 리사이즈 대응
+// 반응형 처리
 window.addEventListener('resize', () => {
     const width = container.clientWidth;
     const height = container.clientHeight;
-    renderer.setSize(width, height);
-    camera.aspect = width / height;
+    const aspect = width / height;
+    camera.left = -d * aspect;
+    camera.right = d * aspect;
+    camera.top = d;
+    camera.bottom = -d;
     camera.updateProjectionMatrix();
+    renderer.setSize(width, height);
 });
+
+// 전역 등록
+window.loadCar = loadCar;
+loadCar(1);
