@@ -1,6 +1,13 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader } from 'GLTFLoader';
+import { OrbitControls } from 'OrbitControls';
+
+
+
+console.log("THREE 확인:", THREE);
+console.log("GLTFLoader 확인:", GLTFLoader);
+console.log("OrbitControls 확인:", OrbitControls);
+
 
 const container = document.querySelector('.viewer-container');
 
