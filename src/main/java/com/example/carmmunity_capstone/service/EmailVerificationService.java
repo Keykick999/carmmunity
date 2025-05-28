@@ -22,23 +22,36 @@ public class EmailVerificationService {
     public void sendVerificationCode(String email, String purpose) {
         validatePurpose(purpose);
 
-        // 같은 이메일에 대해 다른 userId로 시도하는 경우 차단
-        if (userRepository.findByEmail(email).isPresent()) {
+        if(purpose.equals("signup")){
+            if (userRepository.findByEmail(email).isPresent()) {
                 throw new IllegalArgumentException("이미 회원가입에 사용된 이메일입니다.");
             }
+            String code = generateCode();
 
-        String code = generateCode();
+            EmailVerification verification = EmailVerification.builder()
+                    .email(email)
+                    .verificationCode(code)
+                    .purpose(purpose)
+                    .createdAt(LocalDateTime.now())
+                    .isVerified(false)
+                    .build();
 
-        EmailVerification verification = EmailVerification.builder()
-                .email(email)
-                .verificationCode(code)
-                .purpose(purpose)
-                .createdAt(LocalDateTime.now())
-                .isVerified(false)
-                .build();
+            repository.save(verification);
+            emailSender.send(email, "[CarCommunity] 회원가입용 인증 코드", "인증 코드는: " + code);
+        } else if (purpose.equals("reset")) {
+            String code = generateCode();
 
-        repository.save(verification);
-        emailSender.send(email, "[CarCommunity] 인증 코드", "인증 코드는: " + code);
+            EmailVerification verification = EmailVerification.builder()
+                    .email(email)
+                    .verificationCode(code)
+                    .purpose(purpose)
+                    .createdAt(LocalDateTime.now())
+                    .isVerified(false)
+                    .build();
+
+            repository.save(verification);
+            emailSender.send(email, "[CarCommunity] 비밀번호 초기화용 인증 코드", "인증 코드는: " + code);
+        }
     }
 
 

@@ -75,25 +75,16 @@ public class UserController {
         return ResponseEntity.ok(Map.of("userId", userId));
     }
 
-
-
-    /*
-    // 비밀번호 재설정 요청 - 인증 코드 전송만 수행
-    @PostMapping("/help/pw")
-    public ResponseEntity<String> requestPasswordReset(@RequestParam String email) {
-        emailVerificationService.sendVerificationCode(email, "reset");
-        return ResponseEntity.ok("비밀번호 재설정 코드 전송 완료");
-    }
-     */
-
-    /*
-    // 비밀번호 재설정 실행 (코드 검증 포함)
+    //비밀번호 초기화
     @PostMapping("/reset-password")
-    public ResponseEntity<Void> resetPassword(@RequestBody @Valid PasswordResetRequest request) {
-        userService.resetPassword(request);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<String> resetPassword(@RequestBody ResetPasswordRequest request) {
+        userService.resetPassword(
+                request.getEmail(),
+                request.getNewPassword(),
+                request.getVerificationCode()
+        );
+        return ResponseEntity.ok("비밀번호가 성공적으로 변경되었습니다.");
     }
-    */
 
     /*
     // 회원 탈퇴

@@ -178,6 +178,24 @@ public class UserService {
     }
 
 
+    //비밀번호 초기화
+    @Transactional
+    public void resetPassword(String email, String newPassword, String verificationCode) {
+        // 1. 인증 코드 검증
+        emailVerificationService.verifyAndMarkAsVerified(email, verificationCode, "reset");
+
+        // 2. 유저 조회
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("해당하는 사용자가 없습니다."));
+
+        // ✅ 반드시 newPassword를 암호화해서 저장해야 함
+        user.setPassword(passwordEncoder.encode(newPassword));
+
+        userRepository.save(user);
+    }
+
+
+
 
 
     // 요청보낸 회원의 id값 확인
@@ -203,19 +221,6 @@ public class UserService {
 
 
 
-    /*
-    // 비밀번호 재설정
-    @Transactional
-    public void resetPassword(PasswordResetRequest request) {
-        emailVerificationService.verifyAndMarkAsVerified(request.getEmail(), "reset");
-
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("이메일에 해당하는 사용자가 없습니다."));
-
-        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
-        userRepository.save(user);
-    }
-    */
 
     /*
     // 회원 탈퇴

@@ -18,7 +18,7 @@ scene.background = new THREE.Color(0xf5f6fa);
 // OrthographicCamera 사용 (크기 고정)
 const d = 4; // zoom 비율
 const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 0.1, 1000);
-camera.position.set(0, 1.5, 6);
+camera.position.set(0, 1.5, 10);    // 6 -> 10
 camera.lookAt(0, 0, 0);
 
 // 렌더러 생성 및 색상 보정

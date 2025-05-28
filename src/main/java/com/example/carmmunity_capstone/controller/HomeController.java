@@ -40,7 +40,6 @@ public class HomeController {
 
     @GetMapping("/postDetail")
     public String postDetail(@RequestParam("postId") Integer postId, Model model) {
-        System.out.println("postId = " + postId);
         model.addAttribute("postId", postId);
         return "html/postDetail";
     }
@@ -53,5 +52,15 @@ public class HomeController {
     @GetMapping("/modifyInfo")
     public String modifyInfo() {
         return "html/modifyInfo";
+    }
+
+    @GetMapping("/pw-find")
+    public String resetPassword() {
+        return "html/pw-find";
+    }
+
+    @GetMapping("/car-list")
+    public String carList() {
+        return "html/car-list";
     }
 }
