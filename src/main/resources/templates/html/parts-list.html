@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>파츠 고르기 | Carmmunity</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500;700&display=swap');
+        body {
+            margin: 0;
+            background-color: #f9f9f9;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .header {
+            background-color: white;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #ddd;
+            position: relative;
+            z-index: 1000;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .logo img {
+            height: 36px;
+        }
+
+        .user-profile {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+            cursor: pointer;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .write-button {
+            padding: 8px 16px;
+            background-color: #333;
+            color: white;
+            font-weight: 600;
+            border-radius: 8px;
+            text-decoration: none;
+        }
+
+        .write-button:hover {
+            background-color: #555;
+        }
+
+        .cart-icon {
+            width: 28px;
+            height: 28px;
+            cursor: pointer;
+            filter: invert(30%) sepia(100%) saturate(500%) hue-rotate(180deg);
+            transition: transform 0.2s ease;
+        }
+
+        .cart-icon:hover {
+            transform: scale(1.1);
+            cursor: pointer;
+        }
+
+        #cartToggleBtn {
+            display: none;
+        }
+
+        .cart-box {
+            position: absolute;
+            top: 70px;
+            right: 24px;
+            background: white;
+            border: 1px solid #ccc;
+            padding: 16px;
+            border-radius: 12px;
+            max-width: 400px;
+            width: 100%;
+            font-size: 0.95rem;
+            z-index: 999;
+            display: none;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .cart-box strong {
+            font-size: 1rem;
+            display: block;
+            margin-bottom: 10px;
+            color: #333;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 6px;
+        }
+
+        .cart-box ul {
+            list-style: none;
+            padding-left: 0;
+            margin: 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .cart-box li {
+            padding: 6px 0;
+            border-bottom: 1px solid #eee;
+            color: #444;
+        }
+
+        .cart-box li:last-child {
+            border-bottom: none;
+        }
+
+        .condition-selector {
+            max-width: 1200px;
+            margin: 30px auto 10px;
+            padding: 0 20px;
+            display: flex;
+            gap: 12px;
+            z-index: 1;
+            position: relative;
+        }
+
+        .condition-selector button {
+            padding: 8px 16px;
+            background-color: #f5f5f5;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .condition-selector button.selected {
+            background-color: #007BFF;
+            color: white;
+            border-color: #007BFF;
+        }
+
+        .container-wrapper {
+            display: flex;
+            max-width: 1200px;
+            margin: 0 auto;
+            border: 1px solid #ddd;
+            height: 210px;
+            z-index: 0;
+            position: relative;
+        }
+
+        .manufacturer-list {
+            width: 50%;
+            border-right: 1px solid #ccc;
+            overflow-y: auto;
+            padding: 10px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            background: white;
+        }
+
+        .manufacturer-item {
+            padding: 6px;
+            cursor: pointer;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 0.95rem;
+        }
+
+        .manufacturer-item:hover,
+        .manufacturer-item.selected {
+            background-color: #007BFF;
+            color: white;
+        }
+
+        .model-list {
+            width: 50%;
+            overflow-y: auto;
+            padding: 20px;
+            background: white;
+        }
+
+        .model-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .model-item {
+            padding: 10px;
+            background-color: #f5f5f5;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .model-item:hover,
+        .model-item.selected {
+            background-color: #007BFF;
+            color: white;
+            border-color: #007BFF;
+        }
+
+        .search-button-box {
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .search-button-box button {
+            padding: 12px 30px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .search-button-box button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 40px;
+            padding: 40px;
+            max-width: 1400px;
+            margin: auto;
+        }
+
+        .car-card {
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .car-card img {
+            width: 250px;
+            height: auto;
+            transition: transform 0.3s ease;
+        }
+
+        .car-card:hover img {
+            transform: scale(1.08);
+        }
+
+        .car-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-top: 8px;
+        }
+
+        .car-detail {
+            font-size: 0.9rem;
+            color: #555;
+        }
+
+        #proceedBtn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 12px 24px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 1rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        #proceedBtn:hover {
+            background-color: #0056b3;
+        }
+
+        .car-card.selected {
+            border: 3px solid #007BFF;
+            background-color: #eef5ff;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .cart-icon {
+            font-size: 20px;
+            cursor: pointer;
+            vertical-align: middle;
+            line-height: 1;
+            position: relative;
+            top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <div class="logo">
+        <img src="/image/logo.png" alt="로고">
+        Carmmunity
+    </div>
+    <div class="header-right">
+        <a href="/postCreate" class="write-button">+ 글쓰기</a>
+        <div class="cart-box" id="cartBox">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <strong>장바구니 목록</strong>
+                <button onclick="toggleCartBox()" style="background: none; border: none; font-size: 18px; cursor: pointer;">&times;</button>
+            </div>
+            <ul id="cartItems"></ul>
+            <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+                <button class="btn btn-sm btn-danger" onclick="clearCart()">전체 삭제</button>
+                <button class="btn btn-sm btn-primary" onclick="goToCart()">장바구니 페이지</button>
+            </div>
+        </div>
+        <i class="fas fa-cart-shopping cart-icon" onclick="toggleCartBox()"></i>
+        <img id="profile-image" src="" class="user-profile" alt="프로필" onclick="location.href='/main.html'">
+    </div>
+</header>
+
+<section class="condition-selector">
+    <button class="selected">제조사</button>
+    <button disabled>소재</button>
+    <button disabled>컬러</button>
+</section>
+
+<div class="container-wrapper">
+    <div class="manufacturer-list" id="manufacturerList"></div>
+    <div class="model-list">
+        <div class="model-grid" id="modelContainer">
+            <p>제조사를 선택해주세요.</p>
+        </div>
+        <div class="search-button-box">
+            <button id="searchBtn" onclick="searchCar()" disabled>선택한 조건 검색하기</button>
+        </div>
+    </div>
+</div>
+
+<section class="image-grid" id="imageContainer"></section>
+<button id="proceedBtn" onclick="goToCart()">이어서 튜닝하기 →</button>
+
+
+<script>
+    // 사용자 프로필 이미지 설정
+    const token = 'Bearer ' + localStorage.getItem("token");
+
+    if (!token || token === "Bearer null") {
+        alert("로그인이 필요합니다.");
+        window.location.href = "/";
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        fetch("/users/info", {
+            headers: {
+                Authorization: token
+            }
+        })
+            .then(res => {
+                return res.json();
+            })
+            .then(user => {
+                // 프로필 이미지 반영
+                const profileImg = document.getElementById("profile-image");
+                if (user.profileImagePath) {
+                    profileImg.src = user.profileImagePath;
+                }
+            })
+            .catch(err => {
+                console.error("회원 정보 로딩 실패:", err);
+            });
+    });
+
+
+    let selectedManufacturer = '';
+    let selectedModel = '';
+
+
+    const manufacturerNames = ['현대', '기아', 'BMW', 'Audi', 'Benz', 'Toyota', 'Honda', 'Nissan', 'Chevrolet', 'Genesis', 'Volkswagen', 'Peugeot', 'Volvo', 'Ford', 'Chrysler', 'Jeep', 'Renault', 'Mazda', 'Lexus', 'Infiniti'];
+
+    const modelMap = {
+        현대: ['휠', '프론트 범퍼', '리어 스포일러', '사이드 스커트'],
+        기아: ['휠', '사이드 스커트', '루프박스'],
+        BMW: ['휠', 'M 퍼포먼스 프론트 범퍼', '카본 리어 디퓨저'],
+        Audi: ['휠', '루프 스포일러', '사이드 몰딩'],
+        Benz: ['AMG 휠', '프론트 립', '리어 윙'],
+        Toyota: ['TRD 휠', '프론트 스커트', '사이드 가니쉬'],
+        Honda: ['휠', '리어 범퍼 가드', '사이드 립'],
+        Nissan: ['GT 휠', '프론트 디퓨저', '리어 스포일러'],
+        Chevrolet: ['ZL1 휠', '프론트 범퍼', '카본 루프'],
+        Genesis: ['휠', '리어 윙', '프론트 에어댐'],
+        Volkswagen: ['GTI 휠', '사이드 스커트', '리어 범퍼'],
+        Peugeot: ['휠', '프론트 범퍼', '리어 립'],
+        Volvo: ['휠', '사이드 라인 가니쉬', '루프박스'],
+        Ford: ['머슬휠', '리어 디퓨저', '프론트 립'],
+        Chrysler: ['휠', '리어 스포일러', '사이드 커버'],
+        Jeep: ['오프로드 휠', '프론트 범퍼 가드', '루프 캐리어'],
+        Renault: ['휠', '사이드 스커트', '루프 랙'],
+        Mazda: ['휠', '프론트 스커트', '리어 가니쉬'],
+        Lexus: ['F SPORT 휠', '사이드 디퓨저', '카본 스포일러'],
+        Infiniti: ['휠', '프론트 립', '리어 디퓨저']
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const container = document.getElementById('manufacturerList');
+        manufacturerNames.forEach(name => {
+            const div = document.createElement('div');
+            div.className = 'manufacturer-item';
+            div.textContent = name;
+            div.onclick = event => selectManufacturer(name, event);
+            container.appendChild(div);
+        });
+    });
+
+    function selectManufacturer(manufacturer, event) {
+        selectedManufacturer = manufacturer;
+        selectedModel = '';
+        document.getElementById('searchBtn').disabled = true;
+        document.querySelectorAll('.manufacturer-item').forEach(item => item.classList.remove('selected'));
+        event.target.classList.add('selected');
+        const container = document.getElementById('modelContainer');
+        container.innerHTML = '';
+        (modelMap[manufacturer] || []).forEach(model => {
+            const div = document.createElement('div');
+            div.className = 'model-item';
+            div.textContent = model;
+            div.onclick = () => selectModel(model, div);
+            container.appendChild(div);
+        });
+    }
+
+    function selectModel(model, element) {
+        selectedModel = model;
+        document.querySelectorAll('.model-item').forEach(item => item.classList.remove('selected'));
+        element.classList.add('selected');
+        if (selectedManufacturer && selectedModel) {
+            document.getElementById('searchBtn').disabled = false;
+        }
+    }
+
+    function toggleCartBox() {
+        const box = document.getElementById("cartBox");
+        box.style.display = box.style.display === "block" ? "none" : "block";
+        renderCart();
+    }
+
+    function renderCart() {
+        const list = document.getElementById("cartItems");
+        const cart = JSON.parse(localStorage.getItem("carCart") || "{}");
+
+        list.innerHTML = Object.entries(cart).map(([type, name]) => `
+        <li>
+            <strong>${type}</strong>: ${name}
+            <button onclick="removeFromCart('${type}')" style="float: right; border: none; background: none; color: red; cursor: pointer;">✕</button>
+        </li>
+    `).join("");
+    }
+
+
+    function removeFromCart(partType) {
+        const cart = JSON.parse(localStorage.getItem("carCart") || "{}");
+        delete cart[partType];
+        localStorage.setItem("carCart", JSON.stringify(cart));
+        renderCart();
+    }
+
+    function clearCart() {
+        if (confirm("장바구니를 모두 비우시겠습니까?")) {
+            localStorage.removeItem("carCart");
+            renderCart();
+        }
+    }
+
+    function goToCart() {
+        const cart = JSON.parse(localStorage.getItem("carCart") || "{}");
+        if (Object.keys(cart).length === 0) {
+            alert("선택된 파츠가 없습니다.");
+            return;
+        }
+
+        window.location.href = "/partsList";
+    }
+
+
+
+
+    function addToCart(item) {
+        const cart = JSON.parse(localStorage.getItem("carCart") || "[]");
+        if (!cart.includes(item)) {
+            cart.push(item);
+            localStorage.setItem("carCart", JSON.stringify(cart));
+            renderCart();
+        }
+    }
+
+
+    async function searchCar() {
+        if (!selectedManufacturer || !selectedModel) return;
+        const url = `/tuning/2d?manufacturer=${selectedManufacturer}&modelCode=${selectedModel}&category=parts`;
+        const response = await fetch(url);
+        const images = await response.json();
+        console.log(images);
+        const container = document.getElementById("imageContainer");
+        container.innerHTML = '';
+
+        const cart = JSON.parse(localStorage.getItem("carCart") || "{}");
+
+        // 이미지 렌더링 반복
+        images.forEach(src => {
+            const card = document.createElement('div');
+            card.className = 'car-card';
+
+            const fileName = src.split('/parts/')[1]?.split('.png')[0] || 'Unknown';
+            const carName = fileName;
+
+            const img = document.createElement('img');
+            img.src = src;
+
+            const name = document.createElement('div');
+            name.className = 'car-name';
+            name.textContent = carName;
+
+            const detail = document.createElement('div');
+            detail.className = 'car-detail';
+            detail.textContent = '순수 전기';
+
+            card.appendChild(img);
+            card.appendChild(name);
+            card.appendChild(detail);
+
+            // ✅ 선택 상태 확인: 현재 모델 종류의 파츠명이 로컬스토리지에 저장된 값과 같다면
+            if (cart[selectedModel] === carName) {
+                card.classList.add("selected");
+            }
+
+            // ✅ 선택 또는 해제 클릭 이벤트
+            card.onclick = () => {
+                let updatedCart = JSON.parse(localStorage.getItem("carCart") || "{}");
+                alert(card.classList.contains("selected"))
+
+                if (card.classList.contains("selected")) {
+                    card.classList.remove("selected");
+                    delete updatedCart[selectedModel];
+                } else {
+                    // 같은 종류 파츠들만 선택 해제
+                    document.querySelectorAll('.car-card.selected').forEach(c => c.classList.remove('selected'));
+
+                    card.classList.add("selected");
+                    updatedCart[selectedModel] = carName;
+                }
+
+                localStorage.setItem("carCart", JSON.stringify(updatedCart));
+                renderCart();
+            };
+
+            container.appendChild(card);
+        });
+    }
+</script>
+</body>
+</html>

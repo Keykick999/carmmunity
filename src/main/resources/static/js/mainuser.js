@@ -16,7 +16,6 @@ document.addEventListener("DOMContentLoaded", () => {
             return res.json();
         })
         .then(user => {
-            console.log("✅ 받아온 사용자 정보:", user);
             document.getElementById("profile-image").src = user.profileImagePath;
             document.getElementById("nickname").textContent = user.nickname;
             document.getElementById("name").textContent = user.name;

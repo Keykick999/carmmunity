@@ -1,5 +1,4 @@
 package com.example.carmmunity_capstone.dto;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,6 +7,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ShoppingItemRequest {
-    private String category;     // car, wing, bonnet 등
-    private String imageName;    // 선택된 파일명
+    private String imageCode; // 차량: bmw_m4_g82_white, 파츠: 1wh, 2ss 등
 }

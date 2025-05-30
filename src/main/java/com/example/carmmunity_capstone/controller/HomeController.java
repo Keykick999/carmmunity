@@ -63,4 +63,9 @@ public class HomeController {
     public String carList() {
         return "html/car-list";
     }
+
+    @GetMapping("/parts-list")
+    public String partsList() {
+        return "html/parts-list";
+    }
 }
