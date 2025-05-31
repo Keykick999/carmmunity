@@ -29,7 +29,7 @@ public class SecurityConfig {
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS) // 세션을 사용하지 않음
                 .and()
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/","/users", "/users/login", "/email/**", "/carTest", "/**").permitAll() // 비회원 접근 허용 경로 (logout 제외)
+                        .requestMatchers("/","/users", "/users/login", "/email/**", "/carTest", "/**" ,"edit-post").permitAll() // 비회원 접근 허용 경로 (logout 제외)
                         .anyRequest().authenticated() // 그 외 모든 요청은 인증 필요
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class) // JWT 필터를 UsernamePasswordAuthenticationFilter 앞에 추가

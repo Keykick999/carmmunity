@@ -50,7 +50,7 @@ function loadPost() {
             <button class="yt-like-button" data-liked="${likeDataAttr}" onclick="togglePostLike(this)">
                 <i class="bi bi-hand-thumbs-up${isLiked ? '-fill' : ''}"></i> 좋아요
             </button>
-                `;
+        `;
 
                 // ✅ 작성자라면 수정/삭제 버튼 추가
                 const authorButtons = post.authorFlag
@@ -69,9 +69,56 @@ function loadPost() {
         `;
 
             $('#post').html(postHtml);
+        },
+        error: function (xhr) {
+            if (xhr.status === 404) {
+                alert("존재하지 않는 게시글입니다.");
+            } else {
+                alert("게시글을 불러오는 중 오류가 발생했습니다.")
+            }
+            window.location.href = "/postList";
         }
     });
 }
+
+
+function editPost(postId) {
+    $.ajax({
+        url: `/posts/${postId}`,
+        type: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` },
+        success: function () {
+            window.location.href = `/edit-post?postId=${postId}`;  // 수정 폼 HTML 경로
+        },
+        error: function () {
+            alert("게시글 데이터를 불러오지 못했습니다.");
+        }
+    });
+}
+
+
+
+function deletePost(postId) {
+    if (!confirm("정말로 이 게시글을 삭제하시겠습니까?")) return;
+
+    $.ajax({
+        url: `/posts/${postId}`,
+        type: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+        success: function () {
+            alert("🗑️ 게시글이 삭제되었습니다.");
+            window.location.href = "/postList";
+        },
+        error: function (xhr) {
+            if (xhr.status === 403) {
+                alert("❌ 삭제 권한이 없습니다.");
+            } else {
+                alert("❌ 게시글 삭제에 실패했습니다.");
+            }
+        }
+    });
+}
+
 
 function togglePostLike(buttonEl) {
     const isLiked = $(buttonEl).attr('data-liked') === 'true';

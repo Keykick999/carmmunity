@@ -65,7 +65,7 @@ public class PostController {
     public ResponseEntity<String> updatePost(@PathVariable("postId") Integer postId,
                                              @RequestPart("postData") PostRequest postUpdateRequest,
                                              @RequestPart(value = "postImage", required = false) MultipartFile postImage,
-                                             @RequestPart(value = "postImage", required = false) MultipartFile thumbnailImage) {
+                                             @RequestPart(value = "thumbnailImage", required = false) MultipartFile thumbnailImage) {
         postService.update(postId, postUpdateRequest, postImage, thumbnailImage);
         return ResponseEntity.status(HttpStatus.CREATED).body("게시글이 성공적으로 수정되었습니다!");
     }

@@ -94,6 +94,7 @@ public class PostService {
 
         // 게시글 조회
         Post post = postRepository.findById(postId)
+                .filter(p -> p.getDeletedAt() == null) // 삭제 안 된 게시글만 허용
                 .orElseThrow(() -> new PostNotFoundException("해당 게시글을 찾을 수 없습니다."));
 
         // 좋아요 여부 확인

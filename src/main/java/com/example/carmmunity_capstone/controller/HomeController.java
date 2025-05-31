@@ -68,4 +68,10 @@ public class HomeController {
     public String partsList() {
         return "html/parts-list";
     }
+
+    @GetMapping("/edit-post")
+    public String editPost(@RequestParam Long postId, Model model) {
+        model.addAttribute("postId", postId);
+        return "html/edit-post";
+    }
 }
