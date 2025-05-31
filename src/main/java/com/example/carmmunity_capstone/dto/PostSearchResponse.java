@@ -31,4 +31,6 @@ public class PostSearchResponse {
     private LocalDateTime updatedAt;
 
     private boolean likedByCurrentUser;
+
+    private boolean authorFlag;
 }

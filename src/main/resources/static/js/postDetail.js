@@ -40,21 +40,34 @@ function loadPost() {
             'Authorization': `Bearer ${token}`
         },
         success: function (post) {
-            const imageTag = post.imagePath ? `<img class="post-image" src="${post.imagePath}" onerror="this.style.display='none'">` : '';
+            const imageTag = post.imagePath
+                ? `<img class="post-image" src="${post.imagePath}" onerror="this.style.display='none'">`
+                : '';
 
             const isLiked = post.likedByCurrentUser;
-            const likeText = isLiked ? '💖 좋아요' : '❤ 좋아요';
             const likeDataAttr = isLiked ? 'true' : 'false';
-            const likeButtonStyle = isLiked ? 'background-color: #ffdddd; font-weight: bold;' : '';
+            const likeButtonHtml = `
+            <button class="yt-like-button" data-liked="${likeDataAttr}" onclick="togglePostLike(this)">
+                <i class="bi bi-hand-thumbs-up${isLiked ? '-fill' : ''}"></i> 좋아요
+            </button>
+                `;
 
-            const postHtml = `
-                <div class="post-title">${post.nickname}</div>
-                ${imageTag}
-                <div class="post-content">${escapeHtml(post.postContent)}</div>
-                <button class="like-button" style="${likeButtonStyle}" data-liked="${likeDataAttr}" onclick="togglePostLike(this)">
-                    ${likeText}
-                </button>
-            `;
+                // ✅ 작성자라면 수정/삭제 버튼 추가
+                const authorButtons = post.authorFlag
+                    ? `
+                <div class="mt-2">
+                    <button class="btn btn-outline-primary btn-sm me-2" onclick="editPost(${post.postId})">수정</button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="deletePost(${post.postId})">삭제</button>
+                </div>` : '';
+
+                const postHtml = `
+            <div class="post-title">${post.nickname}</div>
+            ${imageTag}
+            <div class="post-content">${escapeHtml(post.postContent)}</div>
+            ${likeButtonHtml}
+            ${authorButtons}
+        `;
+
             $('#post').html(postHtml);
         }
     });
@@ -69,7 +82,10 @@ function togglePostLike(buttonEl) {
         data: JSON.stringify({ likeStatus: !isLiked }),
         success: function (res) {
             $(buttonEl).attr('data-liked', res.currentState);
-            $(buttonEl).text(res.currentState ? '💖 좋아요' : '❤ 좋아요');
+            $(buttonEl).html(`
+             <i class="bi bi-hand-thumbs-up${res.currentState ? '-fill' : ''}"></i> 좋아요
+            `);
+
         }
     });
 }
@@ -82,12 +98,16 @@ function loadComments() {
         success: function (response) {
             const commentsHtml = response.content.map(comment => {
                 const isLiked = comment.likedByCurrentUser;
-                const likeText = isLiked ? '💖 좋아요' : '❤ 좋아요';
                 const likeDataAttr = isLiked ? 'true' : 'false';
-                const likeButtonStyle = isLiked ? 'background-color: #ffdddd; font-weight: bold;' : '';
-                console.log('주인인가: ' + comment.isAuthor);
+                const likeButtonHtml = `
+                  <button class="yt-like-button" data-liked="${likeDataAttr}" onclick="toggleCommentLike(this, ${comment.commentId})">
+                    <i class="bi bi-hand-thumbs-up${isLiked ? '-fill' : ''}"></i> 좋아요
+                  </button>
+                `;
 
-                const authorButtons = comment.isAuthor
+                const likeButtonStyle = isLiked ? 'background-color: #ffdddd; font-weight: bold;' : '';
+
+                const authorButtons = comment.authorFlag
                     ? `
                         <button class="btn btn-sm btn-outline-primary me-2" onclick="editComment(${comment.commentId})">수정</button>
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteComment(${comment.commentId})">삭제</button>
@@ -97,13 +117,11 @@ function loadComments() {
                 return `
                     <div class="comment" data-comment-id="${comment.commentId}" data-nickname="${comment.nickName}">
                         <strong>${escapeHtml(comment.nickName)}</strong><br>
-                        ${escapeHtml(comment.commentContent)}
+                        <div class="comment-content">${escapeHtml(comment.commentContent)}</div>
                         <div class="reply-toggle" onclick="toggleReplies(this, ${comment.commentId}, '${comment.nickName}')">
                             답글 보기
                         </div>
-                        <button class="like-button" style="${likeButtonStyle}" data-liked="${likeDataAttr}" onclick="toggleCommentLike(this, ${comment.commentId})">
-                            ${likeText}
-                        </button>
+                        ${likeButtonHtml}
                         ${authorButtons}
                         <div class="reply-list" style="display:none;"></div>
                         <div class="reply-input">
@@ -126,8 +144,11 @@ function toggleCommentLike(buttonEl, commentId) {
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         data: JSON.stringify({ likeStatus: !isLiked }),
         success: function (res) {
-            $(buttonEl).attr('data-liked', res.currentState);
-            $(buttonEl).text(res.currentState ? '💖 좋아요' : '❤ 좋아요');
+            $(buttonEl)
+                .attr('data-liked', res.currentState)
+                .html(`
+            <i class="bi bi-hand-thumbs-up${res.currentState ? '-fill' : ''}"></i> 좋아요
+          `);
         }
     });
 }
@@ -155,29 +176,34 @@ function loadReplies(parentCommentId, $replyList, replyPage = 0) {
         success: function (response) {
             const repliesHtml = response.content.map(reply => {
                 const isLiked = reply.likedByCurrentUser;
-                const likeText = isLiked ? '💖 좋아요' : '❤ 좋아요';
                 const likeDataAttr = isLiked ? 'true' : 'false';
-                const likeButtonStyle = isLiked ? 'background-color: #ffdddd; font-weight: bold;' : '';
+                const likeButtonHtml = `
+                    <button class="yt-like-button" data-liked="${likeDataAttr}" onclick="toggleCommentLike(this, ${reply.commentId})">
+                        <i class="bi bi-hand-thumbs-up${isLiked ? '-fill' : ''}"></i> 좋아요
+                    </button>
+                `;
 
                 return `
                     <div class="reply">
                         <strong>${escapeHtml(reply.nickName)}</strong><br>
                         ${escapeHtml(reply.commentContent)}
-                        <button class="like-button" style="${likeButtonStyle}" data-liked="${likeDataAttr}" onclick="toggleCommentLike(this, ${reply.commentId})">
-                            ${likeText}
-                        </button>
+                        ${likeButtonHtml}
                     </div>
                 `;
             }).join('');
 
-            let $section = $replyList.find('.reply-section');
-            if ($section.length === 0) {
-                $section = $('<div class="reply-section"></div>').appendTo($replyList);
+            // 🔥 이 부분만 남기세요
+            if (repliesHtml.trim() !== '') {
+                let $section = $replyList.find('.reply-section');
+                if ($section.length === 0) {
+                    $section = $('<div class="reply-section"></div>').appendTo($replyList);
+                }
+                $section.append(repliesHtml);
             }
-            $section.append(repliesHtml);
 
             $replyList.find('.reply-pagination').remove();
-            if (!response.last) {
+
+            if (!response.last && response.content.length > 0) {
                 const moreBtn = $(`<div class="reply-pagination">답글 더보기</div>`);
                 moreBtn.on('click', function () {
                     loadReplies(parentCommentId, $replyList, replyPage + 1);
@@ -256,28 +282,69 @@ function submitReply(parentCommentId, mentionNickName, buttonEl) {
 
 function editComment(commentId) {
     const $comment = $(`[data-comment-id="${commentId}"]`);
-    const rawContent = $comment.contents().filter(function () {
-        return this.nodeType === 3;
-    })[0]?.textContent?.trim();
+    const $contentDiv = $comment.find('.comment-content');
 
-    const newContent = prompt("댓글을 수정하세요:", rawContent);
-    if (!newContent || newContent === rawContent) return;
+    if ($comment.find('.edit-input').length > 0) return;
 
-    $.ajax({
-        url: `/comments/${commentId}`,
-        type: 'PATCH',
-        contentType: 'application/json',
-        headers: { 'Authorization': `Bearer ${token}` },
-        data: JSON.stringify({ content: newContent }),
-        success: function () {
-            alert("✅ 댓글이 수정되었습니다.");
-            loadComments();
-        },
-        error: function () {
-            alert("❌ 댓글 수정에 실패했습니다.");
-        }
+    const originalContent = $contentDiv.text().trim();
+    $contentDiv.hide();
+
+    const $input = $(`<input type="text" class="edit-input form-control mb-2" value="${escapeHtml(originalContent)}">`);
+
+    const $spinner = $(`
+        <div class="spinner-border text-primary mt-2 ms-2" style="display:none; width: 1.5rem; height: 1.5rem;" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    `);
+
+    const $saveBtn = $(`<button class="btn btn-outline-primary btn-sm me-2" style="width: 8%;">저장</button>`);
+    const $cancelBtn = $(`<button class="btn btn-outline-secondary btn-sm" style="width: 8%;">취소</button>`);
+
+    const $btnGroup = $('<div class="d-flex align-items-center mt-2"></div>')
+        .append($saveBtn)
+        .append($cancelBtn)
+        .append($spinner);
+
+    const $editWrapper = $('<div class="edit-area mt-2"></div>')
+        .append($input)
+        .append($btnGroup);
+
+    $contentDiv.after($editWrapper);
+
+    $saveBtn.on('click', function () {
+        const newContent = $input.val().trim();
+        if (!newContent || newContent === originalContent) return;
+
+        $saveBtn.hide();
+        $cancelBtn.hide();
+        $spinner.show();
+
+        $.ajax({
+            url: `/comments/${commentId}`,
+            type: 'PATCH',
+            contentType: 'application/json',
+            headers: { 'Authorization': `Bearer ${token}` },
+            data: JSON.stringify({ content: newContent }),
+            success: function () {
+                $contentDiv.text(newContent).show();
+                $editWrapper.remove();
+            },
+            error: function () {
+                $spinner.hide();
+                $saveBtn.show();
+                $cancelBtn.show();
+                alert("❌ 댓글 수정에 실패했습니다.");
+            }
+        });
+    });
+
+    $cancelBtn.on('click', function () {
+        $editWrapper.remove();
+        $contentDiv.show();
     });
 }
+
+
 
 function deleteComment(commentId) {
     if (!confirm("정말로 이 댓글을 삭제하시겠습니까?")) return;

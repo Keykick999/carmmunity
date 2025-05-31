@@ -1,5 +1,4 @@
 package com.example.carmmunity_capstone.service;
-
 import com.example.carmmunity_capstone.entity.Post;
 import com.example.carmmunity_capstone.entity.PostLike;
 import com.example.carmmunity_capstone.entity.PostLikeId;
@@ -103,6 +102,8 @@ public class PostService {
                 .map(PostLike::getLikeStatus)
                 .orElse(false);
 
+        boolean isAuthor = post.getUser().getUserId().equals(currentUser.getUserId());
+
         return new PostSearchResponse(
                 post.getPostId(),
                 post.getPostTitle(),
@@ -113,7 +114,8 @@ public class PostService {
                 post.getTotalLike(),
                 post.getUser().getNickname(),
                 post.getUpdatedAt(),
-                liked
+                liked,
+                isAuthor
         );
     }
 
