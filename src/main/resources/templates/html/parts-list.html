@@ -37,6 +37,13 @@
             height: 36px;
         }
 
+        .car-card img {
+            width: 250px;
+            height: auto;
+            transition: transform 0.3s ease;
+            background-color: transparent; /* ✅ 배경 투명 지정 */
+        }
+
         .user-profile {
             width: 36px;
             height: 36px;
@@ -355,7 +362,6 @@
 
 
 <script>
-    // 사용자 프로필 이미지 설정
     const token = 'Bearer ' + localStorage.getItem("token");
 
     if (!token || token === "Bearer null") {
@@ -365,58 +371,51 @@
 
     document.addEventListener("DOMContentLoaded", () => {
         fetch("/users/info", {
-            headers: {
-                Authorization: token
-            }
+            headers: { Authorization: token }
         })
-            .then(res => {
-                return res.json();
-            })
+            .then(res => res.json())
             .then(user => {
-                // 프로필 이미지 반영
                 const profileImg = document.getElementById("profile-image");
                 if (user.profileImagePath) {
                     profileImg.src = user.profileImagePath;
                 }
             })
-            .catch(err => {
-                console.error("회원 정보 로딩 실패:", err);
-            });
+            .catch(err => console.error("회원 정보 로딩 실패:", err));
     });
 
+    const partsBrandMap = {
+        Adro: [
+            { name: '휠', code: 'wh' },
+            { name: '프론트 범퍼', code: 'fb' },
+            { name: '사이드 스커트', code: 'ss' }
+        ],
+        Vörsteiner: [
+            { name: '휠', code: 'wh' },
+            { name: '리어 디퓨저', code: 'rd' }
+        ],
+        AKRAPOVIČ: [
+            { name: '리어 디퓨저', code: 'rd' },
+            { name: '윙', code: 'wi' }
+        ]
+    };
 
-    let selectedManufacturer = '';
-    let selectedModel = '';
+    const brandCodeMap = {
+        Adro: '1',
+        Vörsteiner: '2',
+        AKRAPOVIČ: '3'
+    };
 
-
-    const manufacturerNames = ['현대', '기아', 'BMW', 'Audi', 'Benz', 'Toyota', 'Honda', 'Nissan', 'Chevrolet', 'Genesis', 'Volkswagen', 'Peugeot', 'Volvo', 'Ford', 'Chrysler', 'Jeep', 'Renault', 'Mazda', 'Lexus', 'Infiniti'];
-
-    const modelMap = {
-        현대: ['휠', '프론트 범퍼', '리어 스포일러', '사이드 스커트'],
-        기아: ['휠', '사이드 스커트', '루프박스'],
-        BMW: ['휠', 'M 퍼포먼스 프론트 범퍼', '카본 리어 디퓨저'],
-        Audi: ['휠', '루프 스포일러', '사이드 몰딩'],
-        Benz: ['AMG 휠', '프론트 립', '리어 윙'],
-        Toyota: ['TRD 휠', '프론트 스커트', '사이드 가니쉬'],
-        Honda: ['휠', '리어 범퍼 가드', '사이드 립'],
-        Nissan: ['GT 휠', '프론트 디퓨저', '리어 스포일러'],
-        Chevrolet: ['ZL1 휠', '프론트 범퍼', '카본 루프'],
-        Genesis: ['휠', '리어 윙', '프론트 에어댐'],
-        Volkswagen: ['GTI 휠', '사이드 스커트', '리어 범퍼'],
-        Peugeot: ['휠', '프론트 범퍼', '리어 립'],
-        Volvo: ['휠', '사이드 라인 가니쉬', '루프박스'],
-        Ford: ['머슬휠', '리어 디퓨저', '프론트 립'],
-        Chrysler: ['휠', '리어 스포일러', '사이드 커버'],
-        Jeep: ['오프로드 휠', '프론트 범퍼 가드', '루프 캐리어'],
-        Renault: ['휠', '사이드 스커트', '루프 랙'],
-        Mazda: ['휠', '프론트 스커트', '리어 가니쉬'],
-        Lexus: ['F SPORT 휠', '사이드 디퓨저', '카본 스포일러'],
-        Infiniti: ['휠', '프론트 립', '리어 디퓨저']
+    const partTypeNameMap = {
+        wh: '휠',
+        fb: '프론트 범퍼',
+        ss: '사이드 스커트',
+        rd: '리어 디퓨저',
+        wi: '윙'
     };
 
     document.addEventListener('DOMContentLoaded', () => {
         const container = document.getElementById('manufacturerList');
-        manufacturerNames.forEach(name => {
+        Object.keys(partsBrandMap).forEach(name => {
             const div = document.createElement('div');
             div.className = 'manufacturer-item';
             div.textContent = name;
@@ -425,30 +424,29 @@
         });
     });
 
-    function selectManufacturer(manufacturer, event) {
-        selectedManufacturer = manufacturer;
-        selectedModel = '';
+    function selectManufacturer(brand, event) {
         document.getElementById('searchBtn').disabled = true;
         document.querySelectorAll('.manufacturer-item').forEach(item => item.classList.remove('selected'));
         event.target.classList.add('selected');
+
         const container = document.getElementById('modelContainer');
         container.innerHTML = '';
-        (modelMap[manufacturer] || []).forEach(model => {
+        (partsBrandMap[brand] || []).forEach(part => {
             const div = document.createElement('div');
             div.className = 'model-item';
-            div.textContent = model;
-            div.onclick = () => selectModel(model, div);
+            div.textContent = part.name;
+            div.onclick = () => selectModel(brand, part, div);
             container.appendChild(div);
         });
     }
 
-    function selectModel(model, element) {
-        selectedModel = model;
+    function selectModel(brand, part, element) {
         document.querySelectorAll('.model-item').forEach(item => item.classList.remove('selected'));
         element.classList.add('selected');
-        if (selectedManufacturer && selectedModel) {
-            document.getElementById('searchBtn').disabled = false;
-        }
+        document.getElementById('searchBtn').disabled = false;
+
+        localStorage.setItem("selectedBrand", brand);
+        localStorage.setItem("selectedPart", JSON.stringify(part));
     }
 
     function toggleCartBox() {
@@ -460,15 +458,14 @@
     function renderCart() {
         const list = document.getElementById("cartItems");
         const cart = JSON.parse(localStorage.getItem("carCart") || "{}");
-
-        list.innerHTML = Object.entries(cart).map(([type, name]) => `
-        <li>
-            <strong>${type}</strong>: ${name}
-            <button onclick="removeFromCart('${type}')" style="float: right; border: none; background: none; color: red; cursor: pointer;">✕</button>
-        </li>
-    `).join("");
+        list.innerHTML = Object.entries(cart).map(([code, value]) => {
+            const brandCode = value.charAt(0);
+            const partCode = value.slice(1);
+            const partName = partTypeNameMap[partCode] || partCode;
+            const brandName = Object.entries(brandCodeMap).find(([_, c]) => c === brandCode)?.[0] || 'Unknown';
+            return `<li><strong>${partName}</strong> - ${brandName} <button onclick="removeFromCart('${partCode}')" style="float: right; border: none; background: none; color: red; cursor: pointer;">✕</button></li>`;
+        }).join("");
     }
-
 
     function removeFromCart(partType) {
         const cart = JSON.parse(localStorage.getItem("carCart") || "{}");
@@ -490,85 +487,128 @@
             alert("선택된 파츠가 없습니다.");
             return;
         }
-
         window.location.href = "/partsList";
     }
 
-
-
-
-    function addToCart(item) {
-        const cart = JSON.parse(localStorage.getItem("carCart") || "[]");
-        if (!cart.includes(item)) {
-            cart.push(item);
-            localStorage.setItem("carCart", JSON.stringify(cart));
-            renderCart();
-        }
-    }
-
-
     async function searchCar() {
-        if (!selectedManufacturer || !selectedModel) return;
-        const url = `/tuning/2d?manufacturer=${selectedManufacturer}&modelCode=${selectedModel}&category=parts`;
-        const response = await fetch(url);
-        const images = await response.json();
-        console.log(images);
+        const selectedBrand = localStorage.getItem("selectedBrand");
+        const part = JSON.parse(localStorage.getItem("selectedPart"));
+        const selectedCarManufacturer = localStorage.getItem("selectedManufacturer");
+        const selectedCarModel = localStorage.getItem("selectedModel");
+        const selectedCarCode = localStorage.getItem("selectedCarCode") || `${selectedCarManufacturer}_${selectedCarModel}`;
+
+        const queryParams = new URLSearchParams({
+            carManufacturer: selectedCarManufacturer,
+            carModelCode: selectedCarModel,
+            partBrand: selectedBrand,
+            partType: part.name
+        });
+
+        const response = await fetch(`/tuning/2d/parts?${queryParams.toString()}`);
+        const imagePaths = await response.json();
+
         const container = document.getElementById("imageContainer");
         container.innerHTML = '';
 
-        const cart = JSON.parse(localStorage.getItem("carCart") || "{}");
-
-        // 이미지 렌더링 반복
-        images.forEach(src => {
+        imagePaths.forEach(imagePath => {
             const card = document.createElement('div');
             card.className = 'car-card';
 
-            const fileName = src.split('/parts/')[1]?.split('.png')[0] || 'Unknown';
-            const carName = fileName;
-
             const img = document.createElement('img');
-            img.src = src;
+            img.src = imagePath;
 
             const name = document.createElement('div');
             name.className = 'car-name';
-            name.textContent = carName;
+            const fileName = imagePath.split('/').pop();
+            const namePart = fileName.split('_')[1]?.split('.')[0] || fileName.split('.')[0];
+            name.textContent = namePart;
 
             const detail = document.createElement('div');
             detail.className = 'car-detail';
-            detail.textContent = '순수 전기';
+            detail.textContent = selectedBrand;
 
             card.appendChild(img);
             card.appendChild(name);
             card.appendChild(detail);
 
-            // ✅ 선택 상태 확인: 현재 모델 종류의 파츠명이 로컬스토리지에 저장된 값과 같다면
-            if (cart[selectedModel] === carName) {
+            const partCode = part.code;
+            const partName = part.name;
+            const brandCode = brandCodeMap[selectedBrand];
+            const key = partCode;
+            const value = fileName.split('.')[0];
+
+            let cart = JSON.parse(localStorage.getItem("carCart") || "{}");
+
+            if (cart[key] === value) {
                 card.classList.add("selected");
             }
 
-            // ✅ 선택 또는 해제 클릭 이벤트
             card.onclick = () => {
-                let updatedCart = JSON.parse(localStorage.getItem("carCart") || "{}");
-                alert(card.classList.contains("selected"))
+                let prevCart = JSON.parse(localStorage.getItem("carCart") || "{}");
+                let updatedCart = {};
 
-                if (card.classList.contains("selected")) {
-                    card.classList.remove("selected");
-                    delete updatedCart[selectedModel];
+                // car 키는 유지
+                if (prevCart.car) {
+                    updatedCart.car = prevCart.car;
+                }
+
+                // 기존 파츠 key 유지 (car 제외)
+                Object.entries(prevCart).forEach(([k, v]) => {
+                    if (k !== "car" && k !== key) {
+                        updatedCart[k] = v;
+                    }
+                });
+
+                // 클릭한 이미지가 이미 선택된 경우 → 해제
+                if (prevCart[key] === value) {
+                    document.querySelectorAll('.car-card').forEach(c => c.classList.remove("selected"));
                 } else {
-                    // 같은 종류 파츠들만 선택 해제
-                    document.querySelectorAll('.car-card.selected').forEach(c => c.classList.remove('selected'));
-
+                    // 선택 상태로 갱신
+                    updatedCart[key] = value;
+                    document.querySelectorAll('.car-card').forEach(c => c.classList.remove("selected"));
                     card.classList.add("selected");
-                    updatedCart[selectedModel] = carName;
                 }
 
                 localStorage.setItem("carCart", JSON.stringify(updatedCart));
                 renderCart();
             };
-
             container.appendChild(card);
         });
     }
+
+
+    // 이어서 튜닝하기 버튼 클릭
+    document.getElementById("proceedBtn").addEventListener("click", async () => {
+        const cart = JSON.parse(localStorage.getItem("carCart") || "{}");
+        const entries = Object.entries(cart).filter(([key, _]) => key !== "car");   // 차량 제외하고 parts들만 가져오기
+
+        if (entries.length === 0) {
+            alert("저장할 파츠가 없습니다.");
+            return;
+        }
+
+        for (const [_, value] of entries) {
+            try {
+                const res = await fetch("/shopping/add", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": token,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ imageCode: value }) // value는 예: "1wh_a"
+                });
+
+                if (!res.ok) {
+                    console.error("저장 실패:", value);
+                }
+            } catch (err) {
+                console.error("요청 에러:", err);
+            }
+        }
+
+        // 저장이 끝난 후 페이지 이동
+        window.location.href = "/partsList";
+    });
 </script>
 </body>
 </html>

@@ -461,21 +461,24 @@
 
     function renderCart() {
         const list = document.getElementById("cartItems");
-        const cart = JSON.parse(localStorage.getItem("carCart") || "[]");
-        list.innerHTML = cart.map((item, index) => `
+        const cart = JSON.parse(localStorage.getItem("carCart") || "{}");
+
+        list.innerHTML = Object.entries(cart).map(([key, value]) => `
         <li>
-            ${item}
-            <button onclick="removeFromCart(${index})" style="float: right; border: none; background: none; color: red; cursor: pointer;">✕</button>
+            ${key}: ${value}
+            <button onclick="removeFromCart('${key}')" style="float: right; border: none; background: none; color: red; cursor: pointer;">✕</button>
         </li>
     `).join("");
     }
 
-    function removeFromCart(index) {
-        const cart = JSON.parse(localStorage.getItem("carCart") || "[]");
-        cart.splice(index, 1);
+
+    function removeFromCart(key) {
+        const cart = JSON.parse(localStorage.getItem("carCart") || "{}");
+        delete cart[key];
         localStorage.setItem("carCart", JSON.stringify(cart));
         renderCart();
     }
+
 
     function clearCart() {
         if (confirm("장바구니를 모두 비우시겠습니까?")) {
@@ -484,52 +487,65 @@
         }
     }
 
+
     function goToCart() {
-        const cart = JSON.parse(localStorage.getItem("carCart") || "[]");
-        if (cart.length === 0) {
+        const cart = JSON.parse(localStorage.getItem("carCart") || "{}");
+        const imageCode = cart["car"];
+        if (!imageCode) {
             alert("선택된 차량이 없습니다.");
             return;
         }
 
-        window.location.href = "/parts-list";
+        const token = localStorage.getItem("token");
+
+        fetch("/shopping/add", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ imageCode })
+        })
+            .then(res => {
+                if (!res.ok) throw new Error("장바구니 등록 실패");
+                window.location.href = "/parts-list";
+            })
+            .catch(err => {
+                console.error("장바구니 등록 실패:", err);
+                alert("차량 정보를 서버에 저장하는 데 실패했습니다.");
+            });
     }
 
 
-
-    function addToCart(item) {
-        const cart = JSON.parse(localStorage.getItem("carCart") || "[]");
-        if (!cart.includes(item)) {
-            cart.push(item);
-            localStorage.setItem("carCart", JSON.stringify(cart));
-            renderCart();
-        }
-    }
 
 
     async function searchCar() {
         if (!selectedManufacturer || !selectedModel) return;
+
         const url = `/tuning/2d?manufacturer=${selectedManufacturer}&modelCode=${selectedModel}&category=car`;
         const response = await fetch(url);
         const images = await response.json();
-        console.log(images);
+
         const container = document.getElementById("imageContainer");
         container.innerHTML = '';
+
+        // localStorage에 저장된 차량명 (예: car:bmw_m4_g82_white)
+        const cart = JSON.parse(localStorage.getItem("carCart") || "{}");
+        const selectedName = cart["car"]; // ex: "bmw_m4_g82_white"
+
+
         images.forEach(src => {
-            console.log('src: ' + src);
             const card = document.createElement('div');
             card.className = 'car-card';
 
-
-            // 🔧 차량 파일명 추출
+            // 차량 파일명 추출
             const fileName = src.split('/car/')[1]?.split('.png')[0] || 'Unknown';
-            const carName = fileName; // → 예: car_bmw_m64_yellow
+            const carName = fileName;
 
-            const cart = JSON.parse(localStorage.getItem("carCart") || "[]");
-
-            if (cart.length > 0 && cart[0] === carName) {
+            // 선택된 차량이면 강조
+            if (selectedName === carName) {
                 card.classList.add("selected");
             }
-
 
             const img = document.createElement('img');
             img.src = src;
@@ -546,24 +562,28 @@
             card.appendChild(name);
             card.appendChild(detail);
 
-            // 차량 이미지 클릭
+            // 차량 이미지 클릭 시 처리
             card.onclick = () => {
                 const isSelected = card.classList.contains("selected");
 
-                // 선택 해제
                 if (isSelected) {
                     card.classList.remove("selected");
-                    localStorage.removeItem("carCart");
-                } else {
-                    // 다른 선택 해제
-                    document.querySelectorAll('.car-card.selected').forEach(c => c.classList.remove('selected'));
 
-                    // 새 선택 적용
+                    const cart = JSON.parse(localStorage.getItem("carCart") || "{}");
+                    delete cart["car"];
+                    localStorage.setItem("carCart", JSON.stringify(cart));
+                } else {
+                    document.querySelectorAll('.car-card.selected').forEach(c => c.classList.remove('selected'));
                     card.classList.add("selected");
-                    localStorage.setItem("carCart", JSON.stringify([carName]));
+
+                    // 제조사/모델명 따로 저장
+                    localStorage.setItem("selectedManufacturer", selectedManufacturer);
+                    localStorage.setItem("selectedModel", selectedModel);
+                    const cart = JSON.parse(localStorage.getItem("carCart") || "{}");
+                    cart["car"] = carName;
+                    localStorage.setItem("carCart", JSON.stringify(cart));
                 }
             };
-
 
             container.appendChild(card);
         });

@@ -71,4 +71,24 @@ public class TuningService {
             throw new RuntimeException("2D 이미지 조회 중 오류 발생", e);
         }
     }
+
+
+
+    public List<String> getPartImages(String carManufacturer, String carModelCode, String partBrand, String partType) {
+        Path targetDir = Paths.get(base2DPath, carManufacturer, carModelCode, "parts", partBrand, partType);
+
+        if (!Files.exists(targetDir)) return Collections.emptyList();
+
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(targetDir)) {
+            return StreamSupport.stream(stream.spliterator(), false)
+                    .filter(Files::isRegularFile)
+                    .map(path -> String.format(
+                            "/uploads/2d/%s/%s/parts/%s/%s/%s",
+                            carManufacturer, carModelCode, partBrand, partType, path.getFileName()
+                    ))
+                    .collect(Collectors.toList());
+        } catch (IOException e) {
+            throw new RuntimeException("2D 파츠 이미지 조회 중 오류 발생", e);
+        }
+    }
 }
