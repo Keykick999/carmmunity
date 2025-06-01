@@ -19,6 +19,15 @@ public class Term {
     @Column(name = "Term_Code", length = 10)
     private String termCode;
 
+    @Column(name = "Term_Title", nullable = false, length = 100)
+    private String termTitle;
+
     @Column(name = "Term_Content", nullable = false, columnDefinition = "TEXT")
     private String termContent;
+
+    @Column(name = "Is_Required", nullable = false)
+    private boolean isRequired;
+
+    @Column(name = "Display_Order")
+    private int displayOrder;
 }

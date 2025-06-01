@@ -74,4 +74,14 @@ public class HomeController {
         model.addAttribute("postId", postId);
         return "html/edit-post";
     }
+
+    @GetMapping("/shopping-list")
+    public String shoppingList() {
+        return "html/shopping-list";
+    }
+
+    @GetMapping("/tuning-result")
+    public String tuningResult() {
+        return "html/tuning-result";
+    }
 }

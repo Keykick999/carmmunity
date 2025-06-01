@@ -81,7 +81,6 @@ async function signUp() {
     const nickname = document.getElementById("nickname").value.trim();
     const phone = document.getElementById("phone").value.trim();
     const verificationCode = document.getElementById("emailCode").value.trim();
-    const agreedToTerms = document.getElementById("agreeTerms").checked;
 
     let hasError = false;
 
@@ -120,12 +119,31 @@ async function signUp() {
         hasError = true;
     }
 
-    if (!agreedToTerms) {
-        alert("약관에 동의해야 가입할 수 있습니다.");
-        hasError = true;
+    if (hasError) return;
+
+    const agreementInputs = document.querySelectorAll("#termsContainer input[type='checkbox']");
+    const agreements = [];
+    let requiredUnchecked = false;
+
+    agreementInputs.forEach(input => {
+        const termCode = input.dataset.termCode;
+        const isRequired = input.dataset.required === "true";
+        const isAgreed = input.checked;
+
+        if (isRequired && !isAgreed) requiredUnchecked = true;
+
+        agreements.push({ termCode, isAgreed });
+    });
+
+    if (agreementInputs.length === 0) {
+        alert("약관이 로드되지 않았습니다. 새로고침 후 다시 시도해주세요.");
+        return;
     }
 
-    if (hasError) return;
+    if (requiredUnchecked) {
+        alert("모든 필수 약관에 동의해야 가입할 수 있습니다.");
+        return;
+    }
 
     const data = {
         userId,
@@ -134,7 +152,8 @@ async function signUp() {
         name,
         nickname,
         phone,
-        verificationCode
+        verificationCode,
+        agreements
     };
 
     try {
@@ -156,3 +175,37 @@ async function signUp() {
         alert("회원가입 요청 중 오류가 발생했습니다.");
     }
 }
+
+window.onload = async function loadTerms() {
+    const container = document.getElementById("termsContainer");
+    try {
+        const res = await fetch("/api/terms");
+        const text = await res.text();
+        const terms = JSON.parse(text);
+
+        terms.forEach(term => {
+            const div = document.createElement("div");
+            div.className = "form-check";
+
+            const input = document.createElement("input");
+            input.className = "form-check-input";
+            input.type = "checkbox";
+            input.id = `term-${term.termCode}`;
+            input.dataset.termCode = term.termCode; // ✅ 반드시 있어야 서버에서 termCode 확인 가능
+            input.dataset.required = term.isRequired;
+
+            const label = document.createElement("label");
+            label.className = "form-check-label";
+            label.setAttribute("for", input.id);
+            const isRequired = term.isRequired === true || term.isRequired === "true";
+            label.textContent = `${isRequired ? "(필수) " : "(선택) "}${term.termTitle}`;
+
+            div.appendChild(input);
+            div.appendChild(label);
+            container.appendChild(div);
+        });
+    } catch (e) {
+        container.innerHTML = "<div class='text-danger'>약관 로딩 실패</div>";
+        console.error("약관 로딩 오류:", e);
+    }
+};

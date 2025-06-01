@@ -3,8 +3,10 @@ package com.example.carmmunity_capstone.service;
 
 import com.example.carmmunity_capstone.config.JwtTokenProvider;
 import com.example.carmmunity_capstone.dto.*;
+import com.example.carmmunity_capstone.entity.Term;
 import com.example.carmmunity_capstone.entity.User;
 import com.example.carmmunity_capstone.exception.UnauthenticatedUserException;
+import com.example.carmmunity_capstone.repository.TermRepository;
 import com.example.carmmunity_capstone.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -20,8 +22,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -29,12 +34,13 @@ import java.util.UUID;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final TermRepository termRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationManager authenticationManager;
     private final EmailVerificationService emailVerificationService;
+    private final UserTermService userTermService;
 
-    // 회원가입 처리
     @Transactional
     public void register(UserJoinRequest request) {
         if (userRepository.existsById(request.getUserId())) {
@@ -48,6 +54,28 @@ public class UserService {
                 "signup"
         );
 
+        // ✅ 약관 null 방어
+        List<UserTermAgreementRequest> agreements = request.getAgreements();
+        if (agreements == null || agreements.isEmpty()) {
+            throw new IllegalArgumentException("약관 동의 정보가 없습니다.");
+        }
+
+        // ✅ 필수 약관 체크 검증
+        List<Term> requiredTerms = termRepository.findByIsRequiredTrue();
+
+        Set<String> requiredCodes = requiredTerms.stream()
+                .map(term -> term.getTermCode().toUpperCase()) // 대문자 통일
+                .collect(Collectors.toSet());
+
+        Set<String> agreedCodes = agreements.stream()
+                .filter(dto -> dto.isAgreed() && dto.getTermCode() != null)
+                .map(dto -> dto.getTermCode().toUpperCase()) // 대문자 통일
+                .collect(Collectors.toSet());
+
+        if (!agreedCodes.containsAll(requiredCodes)) {
+            throw new IllegalArgumentException("모든 필수 약관에 동의해야 합니다.");
+        }
+
         User user = User.builder()
                 .userId(request.getUserId())
                 .nickname(request.getNickname())
@@ -60,7 +88,10 @@ public class UserService {
                 .build();
 
         userRepository.save(user);
+
+        userTermService.saveUserAgreements(user.getUserId(), agreements);
     }
+
 
     // 로그인 처리
     public UserLoginResponse login(UserLoginRequest request) {

@@ -2,10 +2,6 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'GLTFLoader';
 import { OrbitControls } from 'OrbitControls';
 
-console.log("THREE 확인:", THREE);
-console.log("GLTFLoader 확인:", GLTFLoader);
-console.log("OrbitControls 확인:", OrbitControls);
-
 const container = document.querySelector('.viewer-container');
 const width = container.clientWidth;
 const height = container.clientHeight;

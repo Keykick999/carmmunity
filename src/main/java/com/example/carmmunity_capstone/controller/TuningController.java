@@ -13,6 +13,7 @@ public class TuningController {
 
     private final TuningService tuningService;
 
+
     @GetMapping("/2d")
     public ResponseEntity<List<String>> get2DImages(
             @RequestParam String manufacturer,
@@ -22,7 +23,6 @@ public class TuningController {
         List<String> imagePaths = tuningService.get2DImages(manufacturer, modelCode, category);
         return ResponseEntity.ok(imagePaths);
     }
-
 
 
     // 파츠 검색

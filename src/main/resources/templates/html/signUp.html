@@ -8,14 +8,16 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500;700&display=swap');
 
+        html {
+            overflow-y: auto;
+        }
+
         body {
             background-color: #fafafa;
             font-family: 'Outfit', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
             margin: 0;
+            padding: 40px 0;
+            min-height: 100vh;
         }
 
         .signup-box {
@@ -25,7 +27,7 @@
             padding: 40px;
             width: 100%;
             max-width: 450px;
-            text-align: center;
+            margin: 0 auto;
         }
 
         .logo {
@@ -145,10 +147,8 @@
         <label for="phone">전화번호 (선택)</label>
     </div>
 
-    <div class="form-check mb-3">
-        <input class="form-check-input" type="checkbox" value="" id="agreeTerms">
-        <label class="form-check-label" for="agreeTerms">약관에 동의합니다</label>
-    </div>
+
+    <div id="termsContainer" class="mb-3 text-start"></div>
 
     <button class="btn-submit" onclick="signUp()">회원가입</button>
 
