@@ -24,6 +24,7 @@ public class UserController {
     // 회원가입
     @PostMapping
     public ResponseEntity<Void> register(@RequestBody @Valid UserJoinRequest request) {
+        System.out.println("request = " + request);
         userService.register(request);
         return ResponseEntity.ok().build();
     }

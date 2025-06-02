@@ -130,6 +130,8 @@ async function signUp() {
         const isRequired = input.dataset.required === "true";
         const isAgreed = input.checked;
 
+        console.log(`[체크박스 확인] termCode: ${termCode}, required: ${isRequired}, checked: ${isAgreed}`);
+
         if (isRequired && !isAgreed) requiredUnchecked = true;
 
         agreements.push({ termCode, isAgreed });
@@ -166,13 +168,13 @@ async function signUp() {
         if (res.ok) {
             alert("회원가입 성공! 로그인 페이지로 이동합니다.");
             window.location.href = "/";
-        } else if (res.status === 409) {
-            alert("회원가입 실패. 아이디 또는 닉네임 중복입니다.");
         } else {
-            alert("회원가입 실패. 다시 시도해주세요.");
+            const result = await res.json();
+            alert(result?.message || "회원가입 실패. 다시 시도해주세요.");
         }
     } catch (error) {
         alert("회원가입 요청 중 오류가 발생했습니다.");
+        console.error("signUp error:", error);
     }
 }
 
@@ -180,8 +182,7 @@ window.onload = async function loadTerms() {
     const container = document.getElementById("termsContainer");
     try {
         const res = await fetch("/api/terms");
-        const text = await res.text();
-        const terms = JSON.parse(text);
+        const terms = await res.json();
 
         terms.forEach(term => {
             const div = document.createElement("div");
@@ -191,14 +192,15 @@ window.onload = async function loadTerms() {
             input.className = "form-check-input";
             input.type = "checkbox";
             input.id = `term-${term.termCode}`;
-            input.dataset.termCode = term.termCode; // ✅ 반드시 있어야 서버에서 termCode 확인 가능
-            input.dataset.required = term.isRequired;
+            input.name = "termAgreements";
+            input.dataset.termCode = term.termCode;
+            input.dataset.required = String(term.isRequired) === "true";
 
             const label = document.createElement("label");
             label.className = "form-check-label";
             label.setAttribute("for", input.id);
-            const isRequired = term.isRequired === true || term.isRequired === "true";
-            label.textContent = `${isRequired ? "(필수) " : "(선택) "}${term.termTitle}`;
+            label.textContent = `${String(term.required) === "true" ? "(필수) " : "(선택) "}${term.termTitle}`;
+
 
             div.appendChild(input);
             div.appendChild(label);

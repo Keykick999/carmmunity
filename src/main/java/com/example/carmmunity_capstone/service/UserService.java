@@ -63,14 +63,35 @@ public class UserService {
         // ✅ 필수 약관 체크 검증
         List<Term> requiredTerms = termRepository.findByIsRequiredTrue();
 
+        // === 로그 출력 시작 ===
+        System.out.println("\n===== [약관 검증 디버깅] =====");
+
+        System.out.println("📌 1. DB에서 가져온 필수 약관 목록:");
+        for (Term term : requiredTerms) {
+            System.out.println(" - " + term.getTermCode());
+        }
+        System.out.println("✔️ requiredTerms.size() = " + requiredTerms.size());
+
         Set<String> requiredCodes = requiredTerms.stream()
-                .map(term -> term.getTermCode().toUpperCase()) // 대문자 통일
+                .map(term -> term.getTermCode() != null ? term.getTermCode().toUpperCase() : "null")
                 .collect(Collectors.toSet());
+        System.out.println("✔️ requiredCodes = " + requiredCodes);
+
+        System.out.println("\n📌 2. 프론트에서 받은 약관 동의 목록:");
+        for (UserTermAgreementRequest dto : agreements) {
+            System.out.println(" - " + dto.getTermCode() + " / isAgreed: " + dto.isAgreed());
+        }
 
         Set<String> agreedCodes = agreements.stream()
                 .filter(dto -> dto.isAgreed() && dto.getTermCode() != null)
-                .map(dto -> dto.getTermCode().toUpperCase()) // 대문자 통일
+                .map(dto -> dto.getTermCode().toUpperCase())
                 .collect(Collectors.toSet());
+        System.out.println("✔️ agreedCodes = " + agreedCodes);
+
+        System.out.println("\n📌 3. 포함 여부: agreedCodes.containsAll(requiredCodes)?");
+        System.out.println("➡️ 결과: " + agreedCodes.containsAll(requiredCodes));
+        System.out.println("==================================\n");
+        // === 로그 출력 끝 ===
 
         if (!agreedCodes.containsAll(requiredCodes)) {
             throw new IllegalArgumentException("모든 필수 약관에 동의해야 합니다.");

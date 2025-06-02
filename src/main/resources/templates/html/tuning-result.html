@@ -20,21 +20,15 @@
             margin: 0;
             padding: 0;
             height: 100%;
-            background-color: #f5f6fa;
-            font-family: 'Segoe UI', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            font-family: 'Outfit', 'Segoe UI', sans-serif;
+            background-color: #f4f5f7;
         }
 
         .viewer-container {
             position: relative;
-            width: 90vw;
-            aspect-ratio: 16 / 9;
+            width: 100vw;
+            height: 100vh;
             background: white;
-            border-radius: 16px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-            overflow: hidden;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -51,45 +45,49 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 1.1rem;
-            font-weight: bold;
-            background: rgba(255, 255, 255, 0.85);
+            font-size: 1.2rem;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.9);
             padding: 1rem 2rem;
             border-radius: 12px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            z-index: 10;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            z-index: 20;
         }
 
         .result-text {
             position: absolute;
-            top: 20px;
+            top: 5%;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.6);
-            color: white;
-            padding: 0.5rem 1.5rem;
-            border-radius: 20px;
-            font-size: 1.2rem;
+            color: #fff;
+            padding: 0.6rem 1.8rem;
+            border-radius: 32px;
+            font-size: 1.3rem;
             font-weight: 600;
-            z-index: 10;
+            z-index: 20;
+            pointer-events: none;
         }
 
         .back-button {
             position: absolute;
-            bottom: 20px;
-            right: 20px;
-            background-color: #007bff;
+            bottom: 24px;
+            right: 24px;
+            background-color: #111;
             color: white;
             border: none;
-            border-radius: 8px;
-            padding: 0.6rem 1.2rem;
+            border-radius: 10px;
+            padding: 0.6rem 1.4rem;
             font-size: 1rem;
+            font-weight: 500;
             cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
             transition: background-color 0.3s;
+            z-index: 15;
         }
 
         .back-button:hover {
-            background-color: #0056b3;
+            background-color: #333;
         }
     </style>
 </head>
@@ -116,7 +114,7 @@
     scene.background = new THREE.Color(0xf5f6fa);
 
     const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 0.1, 100);
-    camera.position.set(0, 1.5, 12); // 🎯 차량을 조금 멀리서 보도록 수정
+    camera.position.set(0, 1.5, 14); // 📌 카메라 거리 조정
     camera.lookAt(0, 0, 0);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -162,7 +160,7 @@
                 const size = box.getSize(new THREE.Vector3());
 
                 currentModel.position.sub(center);
-                currentModel.position.y -= size.y * 0.6;
+                currentModel.position.y -= size.y * 0.5; // 🎯 하단이 너무 내려가지 않도록 조정
                 currentModel.scale.set(0.8, 0.8, 0.8);
                 scene.add(currentModel);
 
