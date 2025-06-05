@@ -69,10 +69,16 @@
             pointer-events: none;
         }
 
-        .back-button {
+        .action-buttons {
             position: absolute;
             bottom: 24px;
             right: 24px;
+            display: flex;
+            gap: 12px;
+            z-index: 20;
+        }
+
+        .action-buttons button {
             background-color: #111;
             color: white;
             border: none;
@@ -83,11 +89,106 @@
             cursor: pointer;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
             transition: background-color 0.3s;
-            z-index: 15;
         }
 
-        .back-button:hover {
+        .action-buttons button:hover {
             background-color: #333;
+        }
+
+        #save-modal {
+            position: fixed;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -30%);
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 100;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .slot-options {
+            margin: 1rem 0;
+        }
+
+        .slot-options label {
+            margin-right: 1rem;
+        }
+
+        .slot-options {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .slot-box {
+            border: 2px solid #ccc;
+            padding: 1.2rem 2rem;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1.1rem;
+            font-weight: 600;
+            background: #f9f9f9;
+            user-select: none;
+        }
+
+        .slot-box:hover {
+            border-color: #333;
+        }
+
+        .slot-box.selected {
+            border-color: #0066ff;
+            background-color: #e6f0ff;
+        }
+
+        .slot-box input[type="radio"] {
+            display: none;
+        }
+
+        .modal-save-btn {
+            width: 100%;
+            background-color: #007bff;
+            color: white;
+            padding: 0.8rem 1.2rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 1.5rem;
+        }
+
+        .modal-save-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.2rem;
+        }
+
+        #close-modal {
+            background: none;
+            border: none;
+            font-size: 1.6rem;
+            font-weight: bold;
+            cursor: pointer;
+            color: #888;
+            padding: 0;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+
+        #close-modal:hover {
+            color: #333;
         }
     </style>
 </head>
@@ -95,7 +196,25 @@
 <div class="viewer-container">
     <div class="loading-indicator" id="loading">🚗 차량 불러오는 중...</div>
     <div class="result-text">✨ 튜닝 결과</div>
-    <button class="back-button" onclick="location.href='/main'">🏠 메인으로</button>
+
+    <div class="action-buttons">
+        <button id="retune-btn">🔁 다시 튜닝하기</button>
+        <button id="save-btn">💾 저장하기</button>
+    </div>
+
+    <!-- 저장 모달 -->
+    <div id="save-modal" class="hidden">
+        <div class="modal-header">
+            <h3>저장할 슬롯을 선택하세요</h3>
+            <button id="close-modal">✖</button>
+        </div>
+        <div class="slot-options">
+            <label class="slot-box"><input type="radio" name="slot" value="1" /> 슬롯 1</label>
+            <label class="slot-box"><input type="radio" name="slot" value="2" /> 슬롯 2</label>
+            <label class="slot-box"><input type="radio" name="slot" value="3" /> 슬롯 3</label>
+        </div>
+        <button id="confirm-save" class="modal-save-btn">💾 저장</button>
+    </div>
 </div>
 
 <script type="module">
@@ -105,54 +224,58 @@
 
     const container = document.querySelector('.viewer-container');
     const loadingEl = document.getElementById('loading');
+    const camera = new THREE.OrthographicCamera();
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const controls = new OrbitControls(camera, renderer.domElement);
+    let currentImagePath = '';
+    let currentModel = null;
+
+    const d = 4;
     const width = container.clientWidth;
     const height = container.clientHeight;
     const aspect = width / height;
-    const d = 4;
 
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xf5f6fa);
-
-    const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 0.1, 100);
-    camera.position.set(0, 1.5, 14); // 📌 카메라 거리 조정
+    camera.left = -d * aspect;
+    camera.right = d * aspect;
+    camera.top = d;
+    camera.bottom = -d;
+    camera.near = 0.1;
+    camera.far = 100;
+    camera.position.set(0, 1.5, 14);
     camera.lookAt(0, 0, 0);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.outputEncoding = THREE.sRGBEncoding;
     container.appendChild(renderer.domElement);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 2.0);
-    directionalLight.position.set(10, 10, 10);
-    scene.add(ambientLight, directionalLight);
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf5f6fa);
+    scene.add(new THREE.AmbientLight(0xffffff, 1.5));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
+    dirLight.position.set(10, 10, 10);
+    scene.add(dirLight);
 
-    const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.dampingFactor = 0.1;
     controls.enableZoom = false;
     controls.minPolarAngle = Math.PI / 2;
     controls.maxPolarAngle = Math.PI / 2;
 
     const loader = new GLTFLoader();
-    let currentModel = null;
 
     fetch('/shopping/compose', {
         method: 'POST',
-        headers: {
-            'Authorization': 'Bearer ' + localStorage.getItem('token')
-        }
+        headers: { Authorization: 'Bearer ' + localStorage.getItem('token') }
     })
         .then(res => res.json())
         .then(data => {
-            const glbPath = data.glbPath;
-            return fetch(glbPath).then(res => res.arrayBuffer());
+            currentImagePath = data.glbPath;
+
+            return fetch(data.glbPath).then(res => res.arrayBuffer());
         })
         .then(buffer => {
-            loader.parse(buffer, '', (gltf) => {
+            loader.parse(buffer, '', gltf => {
                 if (currentModel) scene.remove(currentModel);
-
                 currentModel = gltf.scene;
 
                 const box = new THREE.Box3().setFromObject(currentModel);
@@ -160,7 +283,7 @@
                 const size = box.getSize(new THREE.Vector3());
 
                 currentModel.position.sub(center);
-                currentModel.position.y -= size.y * 0.5; // 🎯 하단이 너무 내려가지 않도록 조정
+                currentModel.position.y -= size.y * 0.5;
                 currentModel.scale.set(0.8, 0.8, 0.8);
                 scene.add(currentModel);
 
@@ -168,6 +291,17 @@
                 controls.update();
 
                 loadingEl.style.display = 'none';
+
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        const width = container.clientWidth;
+                        const height = container.clientHeight;
+                        renderer.setSize(width, height);
+                        camera.left = -d * (width / height);
+                        camera.right = d * (width / height);
+                        camera.updateProjectionMatrix();
+                    });
+                });
             });
         })
         .catch(err => {
@@ -183,16 +317,79 @@
     animate();
 
     window.addEventListener('resize', () => {
-        const width = container.clientWidth;
-        const height = container.clientHeight;
-        const aspect = width / height;
+        const aspect = container.clientWidth / container.clientHeight;
         camera.left = -d * aspect;
         camera.right = d * aspect;
-        camera.top = d;
-        camera.bottom = -d;
         camera.updateProjectionMatrix();
-        renderer.setSize(width, height);
+        renderer.setSize(container.clientWidth, container.clientHeight);
     });
+
+    // 버튼 이벤트
+    document.getElementById('retune-btn').onclick = () => {
+        location.href = '/car-list';
+    };
+
+    const saveModal = document.getElementById('save-modal');
+
+    function disableSlotsExcept(slotNum) {
+        document.querySelectorAll('input[name="slot"]').forEach(input => {
+            input.disabled = input.value !== String(slotNum);
+        });
+    }
+
+    function enableAllSlots() {
+        document.querySelectorAll('input[name="slot"]').forEach(input => {
+            input.disabled = false;
+        });
+    }
+
+    document.getElementById('save-btn').onclick = async () => {
+        const res = await fetch('/cars/list', {
+            headers: { Authorization: 'Bearer ' + localStorage.getItem('token') }
+        });
+        const cars = await res.json();
+
+        if (!cars || cars.length === 0) {
+            disableSlotsExcept(1);
+            alert("첫 번째 튜닝 차량은 1번에만 저장이 가능합니다.");
+        } else {
+            enableAllSlots();
+        }
+        saveModal.classList.remove('hidden');
+        document.querySelectorAll('.slot-box').forEach(label => {
+            label.addEventListener('click', () => {
+                document.querySelectorAll('.slot-box').forEach(l => l.classList.remove('selected'));
+                label.classList.add('selected');
+                label.querySelector('input').checked = true;
+            });
+        });
+    };
+
+    document.getElementById('confirm-save').onclick = async () => {
+        const selected = document.querySelector('input[name="slot"]:checked');
+        if (!selected) return alert("슬롯을 선택하세요");
+
+        const carId = parseInt(selected.value);
+        const res = await fetch('/cars', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: 'Bearer ' + localStorage.getItem('token')
+            },
+            body: JSON.stringify({ carId, imagePath: currentImagePath })
+        });
+
+        if (res.ok) {
+            location.href = '/main';
+        } else {
+            console.error(await res.text());
+            alert('저장 실패');
+        }
+    };
+
+    document.getElementById('close-modal').onclick = () => {
+        saveModal.classList.add('hidden');
+    };
 </script>
 </body>
 </html>
