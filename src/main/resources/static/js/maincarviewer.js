@@ -14,7 +14,8 @@ scene.background = new THREE.Color(0xf5f6fa);
 // OrthographicCamera 사용 (크기 고정)
 const d = 4; // zoom 비율
 const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 0.1, 1000);
-camera.position.set(0, 1.5, 10);    // 6 -> 10
+// camera.position.set(0, 1.5, 10);    // 6 -> 10
+camera.position.set(0, -3.0, 10);    // 6 -> 10
 camera.lookAt(0, 0, 0);
 
 // 렌더러 생성 및 색상 보정
@@ -60,9 +61,25 @@ function loadCar(slotId) {
                 scene.remove(currentModel);
                 currentModel.traverse(child => {
                     if (child.isMesh) {
+                        // child.geometry.dispose();
+                        // if (child.material.map) child.material.map.dispose();
+                        // child.material.dispose();
+                        // 기존 모델 삭제 (필수)
                         child.geometry.dispose();
                         if (child.material.map) child.material.map.dispose();
                         child.material.dispose();
+
+                        // 🔁 새로운 재질 적용 (더 리얼하고 간지나는 느낌)
+                        child.material = new THREE.MeshStandardMaterial({
+                            color: 0xffffff,
+                            metalness: 0.6,
+                            roughness: 0.3,
+                            envMapIntensity: 1.0
+                        });
+
+                        // 그림자 설정 (효과적용 가능하면 사용)
+                        child.castShadow = true;
+                        child.receiveShadow = true;
                     }
                 });
             }
@@ -76,8 +93,12 @@ function loadCar(slotId) {
 
                 // 차량 중앙 정렬 + 화면에 더 꽉 차도록 크기 조정
                 currentModel.position.sub(center);
-                currentModel.position.y -= size.y * 0.6;
-                currentModel.scale.set(0.8, 0.8, 0.8); // 더 키움
+                // TODO 원래 position
+                // currentModel.position.y -= size.y * 0.6;
+                currentModel.position.y -= size.y * 250.0;
+                // TODO 원래 scale
+                // currentModel.scale.set(0.8, 0.8, 0.8); // 원래 사이즈
+                currentModel.scale.set(350, 350, 350); // 더 키움
 
                 scene.add(currentModel);
 

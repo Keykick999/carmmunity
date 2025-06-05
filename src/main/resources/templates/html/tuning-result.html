@@ -283,8 +283,12 @@
                 const size = box.getSize(new THREE.Vector3());
 
                 currentModel.position.sub(center);
-                currentModel.position.y -= size.y * 0.5;
-                currentModel.scale.set(0.8, 0.8, 0.8);
+                // TODO 원래 position
+                // currentModel.position.y -= size.y * 0.5;
+                currentModel.position.y -= size.y * 250.0;
+                // TODO 원래 scale
+                // currentModel.scale.set(0.8, 0.8, 0.8); // 원래 사이즈
+                currentModel.scale.set(350, 350, 350); // 더 키움
                 scene.add(currentModel);
 
                 controls.target.set(0, -size.y * 0.3, 0);
