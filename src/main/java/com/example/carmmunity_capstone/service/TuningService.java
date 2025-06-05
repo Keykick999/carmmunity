@@ -15,24 +15,7 @@ import java.util.stream.StreamSupport;
 
 @Service
 public class TuningService {
-    //C:/uploads/2d/{manufacturer}/{model}/{codeName}/{imageName}
-    //car-list에서 넣기 버튼 누르면 차량이 담긴다. -> 우측 하단에 파츠 선택하러 가기 ->  parts-list에서 넣기 버튼 누르면 파츠 담기게
 
-
-    // 차량(제조사, 모델명, 색상(이미지명)), 부품
-    //wheel : wh , side skirt : ss, rear diffuser : rd, wing : wi, wrapping : fl : frontlib
-    //Adro : 1, Vörsteiner : 2, AKRAPOVIČ : 3
-
-    //예시
-    //C:/uploads/2d/bmw/m4/g82/bmw_m4_g82_white
-    //C:/uploads/2d/bmw/m4/g82/1wh
-    //C:/uploads/2d/bmw/m4/g82/2ss
-    //C:/uploads/2d/bmw/m4/g82/2wi
-    //C:/uploads/2d/bmw/m4/g82/3rd
-
-    //C:/uploads/3d/ bmw, m4, g82, white, 1wh, 2ss, 2wi, 3rd
-
-    //최종 조합 형태 : split통해서 분해 bmw, m4, g82, white, 1wh, 2ss, 2wi, 3rd -> 이후에 조합해서 맞는 이미지
 
     @Value("${tuning.image.base-path-2d}")
     private String base2DPath;

@@ -9,7 +9,9 @@ const aspect = width / height;
 
 // 씬 생성
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xf5f6fa);
+// scene.background = new THREE.Color(0xf5f6fa);
+scene.background = new THREE.Color(0xffffff); // 완전 흰색 → ✅
+
 
 // OrthographicCamera 사용 (크기 고정)
 const d = 4; // zoom 비율

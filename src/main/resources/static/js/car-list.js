@@ -1,3 +1,4 @@
+// car-list.js 전체 코드
 
 const token = 'Bearer ' + localStorage.getItem("token");
 
@@ -7,35 +8,31 @@ if (!token || token === "Bearer null") {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    fetch("/users/info", {
-        headers: { Authorization: token }
-    })
-        .then(res => res.json())
-        .then(user => {
-            const profileImg = document.getElementById("profile-image");
-            if (user.profileImagePath) {
-                profileImg.src = user.profileImagePath;
-            }
-        });
-
     renderManufacturerList();
     renderCart();
 });
 
 let selectedManufacturer = '';
 let selectedModel = '';
+let selectedCodeName = '';
 
-const manufacturerNames = ['BMW', 'Audi', 'Benz'];
-const modelMap = {
-    BMW: ['m4-g82', 'i4'],
-    Audi: ['A4', 'A6'],
-    Benz: ['C클래스', 'E클래스']
+const manufacturerModelMap = {
+    BMW: ['1시리즈', '2시리즈', '3시리즈', '4시리즈', 'M2', 'M3', 'M4'],
+    BENZ: ['A클래스', 'C클래스', 'E클래스'],
+    AUDI: ['A3', 'A5', 'A6', 'A7']
+};
+
+const modelCodeNameMap = {
+    'M4': ['g82', 'f82'],
+    '3시리즈': ['g20'],
+    'A클래스': ['w177'],
+    'A3': ['8Y']
 };
 
 function renderManufacturerList() {
     const container = document.getElementById('manufacturerList');
     container.innerHTML = '';
-    manufacturerNames.forEach(name => {
+    Object.keys(manufacturerModelMap).forEach(name => {
         const div = document.createElement('div');
         div.className = 'manufacturer-item';
         div.textContent = name;
@@ -47,32 +44,54 @@ function renderManufacturerList() {
 function selectManufacturer(manufacturer, event) {
     selectedManufacturer = manufacturer;
     selectedModel = '';
+    selectedCodeName = '';
     document.getElementById('searchBtn').disabled = true;
     document.querySelectorAll('.manufacturer-item').forEach(item => item.classList.remove('selected'));
     event.target.classList.add('selected');
-    const container = document.getElementById('modelContainer');
-    container.innerHTML = '';
-    (modelMap[manufacturer] || []).forEach(model => {
+
+    const modelContainer = document.getElementById('modelContainer');
+    modelContainer.innerHTML = '';
+    (manufacturerModelMap[manufacturer] || []).forEach(model => {
         const div = document.createElement('div');
         div.className = 'model-item';
         div.textContent = model;
         div.onclick = () => selectModel(model, div);
-        container.appendChild(div);
+        modelContainer.appendChild(div);
     });
+
+    document.getElementById('codeNameContainer').innerHTML = '';
 }
 
 function selectModel(model, element) {
     selectedModel = model;
+    selectedCodeName = '';
     document.querySelectorAll('.model-item').forEach(item => item.classList.remove('selected'));
     element.classList.add('selected');
-    document.getElementById('searchBtn').disabled = !(selectedManufacturer && selectedModel);
+
+    const codeNameContainer = document.getElementById('codeNameContainer');
+    codeNameContainer.innerHTML = '';
+    (modelCodeNameMap[model] || []).forEach(code => {
+        const div = document.createElement('div');
+        div.className = 'model-item';
+        div.textContent = code;
+        div.onclick = () => selectCodeName(code, div);
+        codeNameContainer.appendChild(div);
+    });
+
+    document.getElementById('searchBtn').disabled = true;
+}
+
+function selectCodeName(codeName, element) {
+    selectedCodeName = codeName;
+    document.querySelectorAll('#codeNameContainer .model-item').forEach(item => item.classList.remove('selected'));
+    element.classList.add('selected');
+    document.getElementById('searchBtn').disabled = false;
 }
 
 async function searchCar() {
-    if (!selectedManufacturer || !selectedModel) return;
+    if (!selectedManufacturer || !selectedModel || !selectedCodeName) return;
 
-    const codeName = selectedModel.replace(/-/g, '').toLowerCase();
-    const url = `/tuning/2d?manufacturer=${selectedManufacturer}&model=${selectedModel}&codeName=${codeName}`;
+    const url = `/tuning/2d?manufacturer=${selectedManufacturer}&model=${selectedModel}&codeName=${selectedCodeName}`;
 
     try {
         const response = await fetch(url);
@@ -143,13 +162,16 @@ function renderCart() {
     })
         .then(res => res.json())
         .then(items => {
+            const carItems = items.filter(item => item.code.split("_").length >= 4); // 차량만 추출
             const list = document.getElementById("cartItems");
-            list.innerHTML = items.map(item => `
-            <li>${item.label}
-                <button onclick="removeFromCart('${item.code}')"
-                        style="float:right; border:none; background:none; color:red; cursor:pointer;">✕</button>
-            </li>
-        `).join("");
+            if (list) {
+                list.innerHTML = carItems.map(item => `
+                <li>${item.label}
+                    <button onclick="removeFromCart('${item.code}')"
+                            style="float:right; border:none; background:none; color:red; cursor:pointer;">✕</button>
+                </li>
+            `).join("");
+            }
         });
 }
 
@@ -162,4 +184,25 @@ function removeFromCart(code) {
         },
         body: JSON.stringify({ imageCode: code })
     }).then(renderCart);
+}
+
+function goToCart() {
+    fetch("/shopping/list", {
+        headers: {
+            "Authorization": token
+        }
+    })
+        .then(res => res.json())
+        .then(list => {
+            const hasCar = list.some(item => item.code.split("_").length >= 4);
+            if (!hasCar) {
+                alert("차량을 먼저 선택해주세요.");
+                return;
+            }
+            window.location.href = "/parts-list";
+        })
+        .catch(err => {
+            console.error("장바구니 확인 실패:", err);
+            alert("장바구니 상태를 확인할 수 없습니다.");
+        });
 }
