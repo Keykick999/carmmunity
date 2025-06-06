@@ -169,6 +169,49 @@
             font-size: 0.95rem;
             resize: none;
         }
+
+        .search-container {
+            display: flex;
+            justify-content: center;
+            padding: 30px 16px 10px;
+        }
+
+        .search-wrapper {
+            display: flex;
+            width: 100%;
+            max-width: 640px;
+            border: 1px solid #ccc;
+            border-radius: 40px;
+            background-color: #fff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        .search-input {
+            flex: 1;
+            border: none;
+            padding: 14px 20px;
+            font-size: 1rem;
+            outline: none;
+            background: transparent;
+            border-radius: 40px 0 0 40px;
+        }
+
+        .search-button {
+            background-color: #0d6efd; /* Bootstrap 파랑 */
+            color: white;
+            border: none;
+            padding: 12px 26px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 0 40px 40px 0;
+            transition: background-color 0.2s ease;
+        }
+
+        .search-button:hover {
+            background-color: #0a58ca;
+        }
     </style>
 </head>
 <body>
@@ -179,27 +222,28 @@
     </div>
     <div class="header-right">
         <a href="/postCreate" class="write-button">+ 글쓰기</a>
-        <img id="profileImage" src="/assets/default-profile.png" class="user-profile" alt="유저 프로필" onclick="location.href='/main.html'">
+        <img id="profileImage" src="/assets/default-profile.png" class="user-profile" alt="유저 프로필" onclick="location.href='/main'">
     </div>
 </header>
 
 
 <div class="search-container">
-    <div style="display: flex; gap: 10px; width: 100%; max-width: 600px;">
-        <input type="text" id="searchInput" class="search-input" placeholder="제목으로 입력해주세요..." />
-        <button id="searchButton" style="border: none; background: none; cursor: pointer;">
-            🔍
-        </button>
+    <div class="search-wrapper">
+        <input
+                type="text"
+                id="searchInput"
+                class="search-input"
+                placeholder="제목 또는 키워드를 입력하세요..."
+        />
+        <button id="searchButton" class="search-button">검색</button>
     </div>
 </div>
+
 
 
 <main class="grid" id="postGrid">
 </main>
 <div id="observerTarget" style="height: 1px;"></div>
-
-
-
 <script type="module" src="/js/postlist.js"></script>
 </body>
 </html>

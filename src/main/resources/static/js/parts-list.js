@@ -22,16 +22,24 @@ document.addEventListener("DOMContentLoaded", () => {
 const partsBrandMap = {
     Adro: [
         { name: '휠', code: 'wh' },
-        { name: '프론트 범퍼', code: 'fb' },
-        { name: '사이드 스커트', code: 'ss' }
+        { name: '사이드 스커트', code: 'ss' },
+        { name: '리어 디퓨저', code: 'rd' },
+        { name: '윙', code: 'wi' },
+        { name: '프론트립', code: 'fl' }
     ],
     Vörsteiner: [
         { name: '휠', code: 'wh' },
-        { name: '리어 디퓨저', code: 'rd' }
+        { name: '사이드 스커트', code: 'ss' },
+        { name: '리어 디퓨저', code: 'rd' },
+        { name: '윙', code: 'wi' },
+        { name: '프론트립', code: 'fl' }
     ],
     AKRAPOVIČ: [
+        { name: '휠', code: 'wh' },
+        { name: '사이드 스커트', code: 'ss' },
         { name: '리어 디퓨저', code: 'rd' },
-        { name: '윙', code: 'wi' }
+        { name: '윙', code: 'wi' },
+        { name: '프론트립', code: 'fl' }
     ]
 };
 
@@ -43,10 +51,10 @@ const brandCodeMap = {
 
 const partTypeNameMap = {
     wh: '휠',
-    fb: '프론트 범퍼',
     ss: '사이드 스커트',
     rd: '리어 디퓨저',
-    wi: '윙'
+    wi: '윙',
+    fl: '프론트립'
 };
 
 document.addEventListener('DOMContentLoaded', () => {
