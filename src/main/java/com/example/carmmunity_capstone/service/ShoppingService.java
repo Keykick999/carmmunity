@@ -1,5 +1,8 @@
 package com.example.carmmunity_capstone.service;
 
+import com.example.carmmunity_capstone.dto.CarDetailDto;
+import com.example.carmmunity_capstone.dto.PartDetailDto;
+import com.example.carmmunity_capstone.dto.ShoppingItemDetailDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -10,9 +13,24 @@ import java.nio.file.*;
 @Slf4j
 @Service
 public class ShoppingService {
+    private static final Map<String, String> brandNameMap = Map.of(
+            "1", "Adro",
+            "2", "Vörsteiner",
+            "3", "AKRAPOVIČ"
+    );
+
+    private static final Map<String, String> partTypeNameMap = Map.of(
+            "wh", "휠",
+            "ss", "사이드 스커트",
+            "rd", "리어 디퓨저",
+            "wi", "윙",
+            "fl", "프론트립"
+    );
 
     // userId → 이미지 코드 리스트 (차량 + 파츠 포함)
+    // key : user1 , value : 이미지경로
     private final Map<String, List<String>> shoppingCart = new ConcurrentHashMap<>();
+
 
     // 이미지 추가 (중복 파츠 유형은 제거 후 추가)
     public void addImage(String userId, String imageCode) {
@@ -75,5 +93,30 @@ public class ShoppingService {
             return "car"; // 차량 이미지 (예: bmw_m4_g82_white)
         }
         return code.replaceAll("[^a-z]", ""); // 예: 2ss → ss
+    }
+
+    public ShoppingItemDetailDto getShoppingDetails(String userId) {
+        List<String> codes = shoppingCart.getOrDefault(userId, Collections.emptyList());
+        CarDetailDto car = null;
+        List<PartDetailDto> parts = new ArrayList<>();
+
+        for (String code : codes) {
+            String type = extractPartType(code);
+
+            if ("car".equals(type)) {
+                String[] tokens = code.split("_");
+                if (tokens.length >= 4) {
+                    car = new CarDetailDto(tokens[0], tokens[1], tokens[2], tokens[3]);
+                }
+            } else {
+                String brandCode = code.substring(0, 1);
+                String partCode = code.substring(1);
+                String brand = brandNameMap.getOrDefault(brandCode, "Unknown");
+                String partType = partTypeNameMap.getOrDefault(partCode, "Unknown");
+                parts.add(new PartDetailDto(brand, partType));
+            }
+        }
+
+        return new ShoppingItemDetailDto(car, parts);
     }
 }

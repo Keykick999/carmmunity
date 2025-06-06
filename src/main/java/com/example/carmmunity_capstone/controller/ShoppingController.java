@@ -1,8 +1,8 @@
 package com.example.carmmunity_capstone.controller;
 
 import com.example.carmmunity_capstone.dto.ComposeResponse;
+import com.example.carmmunity_capstone.dto.ShoppingItemDetailDto;
 import com.example.carmmunity_capstone.dto.ShoppingItemRequest;
-import com.example.carmmunity_capstone.dto.ShoppingItemResponse;
 import com.example.carmmunity_capstone.service.ShoppingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -10,7 +10,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/shopping")
@@ -35,37 +34,11 @@ public class ShoppingController {
     }
 
     @GetMapping("/list")
-    public ResponseEntity<List<ShoppingItemResponse>> getList() {
+    public ResponseEntity<List<String>> getList() {
         String userId = getAuthenticatedUserId();
-        List<String> codes = shoppingService.getCart(userId);
-
-        List<ShoppingItemResponse> items = codes.stream()
-                .map(code -> new ShoppingItemResponse(code, resolveLabel(code)))
-                .toList();
-
-        return ResponseEntity.ok(items);
+        return ResponseEntity.ok(shoppingService.getCart(userId));
     }
 
-    private String resolveLabel(String code) {
-        if (code.split("_").length >= 4) {
-            String[] parts = code.split("_");
-            return String.format("%s %s %s %s",
-                    parts[0].toUpperCase(), parts[1].toUpperCase(), parts[2].toUpperCase(), parts[3].toUpperCase());
-        }
-
-        Map<String, String> brandMap = Map.of(
-                "1", "Adro", "2", "Vörsteiner", "3", "AKRAPOVIČ"
-        );
-        Map<String, String> typeMap = Map.of(
-                "wh", "휠", "ss", "사이드 스커트", "rd", "리어 디퓨저", "wi", "윙", "fl", "프론트립"
-        );
-
-        String brandCode = code.substring(0, 1);
-        String partCode = code.substring(1);
-
-        return brandMap.getOrDefault(brandCode, "Unknown") + " " +
-                typeMap.getOrDefault(partCode, "Unknown");
-    }
 
 
     @PostMapping("/compose")
@@ -74,6 +47,14 @@ public class ShoppingController {
         String glbPath = shoppingService.composeGlbPath(userId);
         return ResponseEntity.ok(new ComposeResponse(glbPath));
     }
+
+
+    @GetMapping("/details")
+    public ResponseEntity<ShoppingItemDetailDto> getDetails() {
+        String userId = getAuthenticatedUserId();
+        return ResponseEntity.ok(shoppingService.getShoppingDetails(userId));
+    }
+
 
     private String getAuthenticatedUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
