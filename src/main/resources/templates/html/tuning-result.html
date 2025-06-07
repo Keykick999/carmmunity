@@ -216,8 +216,8 @@
         <button id="confirm-save" class="modal-save-btn">💾 저장</button>
     </div>
 </div>
-
 <script type="module">
+    camera.right = d * aspect;
     import * as THREE from 'three';
     import { GLTFLoader } from 'GLTFLoader';
     import { OrbitControls } from 'OrbitControls';
@@ -236,7 +236,6 @@
     const aspect = width / height;
 
     camera.left = -d * aspect;
-    camera.right = d * aspect;
     camera.top = d;
     camera.bottom = -d;
     camera.near = 0.1;
@@ -247,14 +246,51 @@
     renderer.setSize(width, height);
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.25;
+
+
+
+
     container.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xf5f6fa);
-    scene.add(new THREE.AmbientLight(0xffffff, 1.5));
-    const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
-    dirLight.position.set(10, 10, 10);
-    scene.add(dirLight);
+    scene.background = new THREE.Color(0xffffff);
+    // scene.background = new THREE.Color(0xf5f6fa);
+    // scene.add(new THREE.AmbientLight(0xffffff, 1.5));
+    // const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
+    // dirLight.position.set(10, 10, 10);
+    // scene.add(dirLight);
+
+    // 바닥 Plane
+    const planeGeo = new THREE.PlaneGeometry(100, 100);
+    const planeMat = new THREE.MeshStandardMaterial({
+        color: 0xf0f0f0,
+        metalness: 0.3,
+        roughness: 0.4
+    });
+    const plane = new THREE.Mesh(planeGeo, planeMat);
+    plane.rotation.x = -Math.PI / 2;
+    plane.position.y = -2;
+    plane.receiveShadow = true;
+    scene.add(plane);
+
+    // 조명
+    const keyLight = new THREE.DirectionalLight(0xfff2e5, 1.7);
+    keyLight.position.set(10, 10, 10);
+    scene.add(keyLight);
+
+    const rimLight = new THREE.DirectionalLight(0xe0e0ff, 0.8);
+    rimLight.position.set(-10, 5, -8);
+    scene.add(rimLight);
+
+    const spotLight = new THREE.SpotLight(0xffffff, 1.2);
+    spotLight.position.set(5, 10, 5);
+    spotLight.target.position.set(0, 0, 0);
+    scene.add(spotLight, spotLight.target);
+
 
     controls.enableDamping = true;
     controls.enableZoom = false;
@@ -278,24 +314,53 @@
                 if (currentModel) scene.remove(currentModel);
                 currentModel = gltf.scene;
 
+                // ✅ 각 child에 재질 및 그림자 설정
+                currentModel.traverse(child => {
+                    if (child.isMesh) {
+                        if (child.material && child.material.isMeshStandardMaterial) {
+                            child.material.metalness = 0.7;
+                            child.material.roughness = 0.3;
+                            child.material.envMapIntensity = 1.2;
+                        }
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
+                });
+
+
                 const box = new THREE.Box3().setFromObject(currentModel);
                 const center = box.getCenter(new THREE.Vector3());
                 const size = box.getSize(new THREE.Vector3());
 
                 currentModel.position.sub(center);
-                // TODO 원래 position
-                // currentModel.position.y -= size.y * 0.5;
-                currentModel.position.y -= size.y * 250.0;
-                // TODO 원래 scale
-                // currentModel.scale.set(0.8, 0.8, 0.8); // 원래 사이즈
-                currentModel.scale.set(350, 350, 350); // 더 키움
+                currentModel.position.y -= size.y * 225.0;
+
+                // ✅ 3D 모델 크기를 0에서 시작 → 부드럽게 키우기
+                currentModel.scale.set(0.01, 0.01, 0.01);
                 scene.add(currentModel);
 
+                // ✅ 등장 애니메이션
+                const targetScale = new THREE.Vector3(350, 350, 350);
+                let progress = 0;
+                const scaleUp = () => {
+                    if (progress < 1) {
+                        progress += 0.02;
+                        currentModel.scale.lerp(targetScale, 0.1);
+                        requestAnimationFrame(scaleUp);
+                    } else {
+                        currentModel.scale.copy(targetScale);
+                    }
+                };
+                scaleUp();
+
+                // 회전 중심 설정
                 controls.target.set(0, -size.y * 0.3, 0);
                 controls.update();
 
+                // 로딩 화면 제거
                 loadingEl.style.display = 'none';
 
+                // 리사이즈 반영
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
                         const width = container.clientWidth;

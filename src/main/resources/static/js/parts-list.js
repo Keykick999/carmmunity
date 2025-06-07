@@ -15,32 +15,15 @@ document.addEventListener("DOMContentLoaded", () => {
             if (user.profileImagePath) {
                 profileImg.src = user.profileImagePath;
             }
-        })
-        .catch(err => console.error("회원 정보 로딩 실패:", err));
+        });
+
+    renderManufacturers();
 });
 
 const partsBrandMap = {
-    Adro: [
-        { name: '휠', code: 'wh' },
-        { name: '사이드 스커트', code: 'ss' },
-        { name: '리어 디퓨저', code: 'rd' },
-        { name: '윙', code: 'wi' },
-        { name: '프론트립', code: 'fl' }
-    ],
-    Vörsteiner: [
-        { name: '휠', code: 'wh' },
-        { name: '사이드 스커트', code: 'ss' },
-        { name: '리어 디퓨저', code: 'rd' },
-        { name: '윙', code: 'wi' },
-        { name: '프론트립', code: 'fl' }
-    ],
-    AKRAPOVIČ: [
-        { name: '휠', code: 'wh' },
-        { name: '사이드 스커트', code: 'ss' },
-        { name: '리어 디퓨저', code: 'rd' },
-        { name: '윙', code: 'wi' },
-        { name: '프론트립', code: 'fl' }
-    ]
+    Adro: ['wh', 'ss', 'rd', 'wi', 'fl'],
+    Vörsteiner: ['wh', 'ss', 'rd', 'wi', 'fl'],
+    AKRAPOVIČ: ['wh', 'ss', 'rd', 'wi', 'fl']
 };
 
 const brandCodeMap = {
@@ -50,70 +33,136 @@ const brandCodeMap = {
 };
 
 const partTypeNameMap = {
-    wh: '휠',
-    ss: '사이드 스커트',
-    rd: '리어 디퓨저',
-    wi: '윙',
-    fl: '프론트립'
+    wh: '휠', ss: '사이드 스커트', rd: '리어 디퓨저', wi: '윙', fl: '프론트립'
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+let selectedBrand = '';
+let selectedPartCode = '';
+
+function renderManufacturers() {
     const container = document.getElementById('manufacturerList');
-    Object.keys(partsBrandMap).forEach(name => {
+    container.innerHTML = '';
+    Object.keys(partsBrandMap).forEach(brand => {
         const div = document.createElement('div');
         div.className = 'manufacturer-item';
-        div.textContent = name;
-        div.onclick = event => selectManufacturer(name, event);
+        div.textContent = brand;
+        div.onclick = () => selectManufacturer(brand, div);
         container.appendChild(div);
     });
-});
+}
 
-function selectManufacturer(brand, event) {
-    document.getElementById('searchBtn').disabled = true;
-    document.querySelectorAll('.manufacturer-item').forEach(item => item.classList.remove('selected'));
-    event.target.classList.add('selected');
+function selectManufacturer(brand, element) {
+    selectedBrand = brand;
+    selectedPartCode = '';
+    document.getElementById("searchBtn").disabled = true;
+    document.getElementById("step1").classList.add("selected");
+    document.getElementById("step2").classList.remove("selected");
+
+    document.querySelectorAll(".manufacturer-item").forEach(el => el.classList.remove("selected"));
+    element.classList.add("selected");
 
     const container = document.getElementById('modelContainer');
     container.innerHTML = '';
-    (partsBrandMap[brand] || []).forEach(part => {
+    partsBrandMap[brand].forEach(partCode => {
         const div = document.createElement('div');
         div.className = 'model-item';
-        div.textContent = part.name;
-        div.onclick = () => selectModel(brand, part, div);
+        div.textContent = partTypeNameMap[partCode];
+        div.onclick = () => selectPart(partCode, div);
         container.appendChild(div);
     });
 }
 
-function selectModel(brand, part, element) {
-    document.querySelectorAll('.model-item').forEach(item => item.classList.remove('selected'));
-    element.classList.add('selected');
-    document.getElementById('searchBtn').disabled = false;
+function selectPart(partCode, element) {
+    selectedPartCode = partCode;
+    document.getElementById("step2").classList.add("selected");
+    document.getElementById("searchBtn").disabled = false;
 
-    localStorage.setItem("selectedBrand", brand);
-    localStorage.setItem("selectedPart", JSON.stringify(part));
+    document.querySelectorAll(".model-item").forEach(el => el.classList.remove("selected"));
+    element.classList.add("selected");
 }
 
-function toggleCartBox() {
-    const box = document.getElementById("cartBox");
-    box.style.display = box.style.display === "block" ? "none" : "block";
-    renderCart();
+async function searchParts() {
+    const manu = localStorage.getItem("selectedManufacturer");
+    const model = localStorage.getItem("selectedModel");
+    const codeName = localStorage.getItem("selectedCodeName");
+
+    const brandCode = brandCodeMap[selectedBrand];
+    const prefix = brandCode + selectedPartCode;
+
+    const response = await fetch(`/tuning/parts?manufacturer=${manu}&model=${model}&codeName=${codeName}&partTypePrefix=${prefix}`);
+    const imagePaths = await response.json();
+
+    const container = document.getElementById("imageContainer");
+    container.innerHTML = "";
+
+    const cart = JSON.parse(localStorage.getItem("carCart") || "{}");
+    const selectedValue = cart[selectedPartCode];
+
+    imagePaths.forEach(path => {
+        const fileName = path.split('/').pop();
+        const baseName = fileName.split('.')[0];
+        const partKey = selectedPartCode;
+        const value = baseName;
+
+        const card = document.createElement("div");
+        card.className = "car-card";
+
+        const img = document.createElement("img");
+        img.src = `/uploads/2d/${manu}/${model}/${codeName}/parts/${fileName}`;
+        card.appendChild(img);
+
+        const name = document.createElement("div");
+        name.className = "car-name";
+        name.textContent = baseName;
+        card.appendChild(name);
+
+        if (value === selectedValue) {
+            card.classList.add("selected");
+        }
+
+        card.onclick = () => {
+            let cart = JSON.parse(localStorage.getItem("carCart") || "{}");
+            const alreadySelected = cart[partKey] === value;
+
+            if (alreadySelected) {
+                if (confirm("선택된 파츠를 삭제하시겠습니까?")) {
+                    delete cart[partKey];
+                    card.classList.remove("selected");
+                }
+            } else if (cart[partKey]) {
+                if (confirm("이미 해당 부위의 파츠가 선택되어 있습니다. 변경하시겠습니까?")) {
+                    cart[partKey] = value;
+                    document.querySelectorAll(".car-card").forEach(c => c.classList.remove("selected"));
+                    card.classList.add("selected");
+                }
+            } else {
+                cart[partKey] = value;
+                document.querySelectorAll(".car-card").forEach(c => c.classList.remove("selected"));
+                card.classList.add("selected");
+            }
+
+            localStorage.setItem("carCart", JSON.stringify(cart));
+            renderCart();
+        };
+
+        container.appendChild(card);
+    });
 }
 
 function renderCart() {
     const list = document.getElementById("cartItems");
     const cart = JSON.parse(localStorage.getItem("carCart") || "{}");
-    list.innerHTML = Object.entries(cart).map(([code, value]) => {
-        const brandCode = value.charAt(0);
-        const partCode = value.slice(1);
-        const partName = partTypeNameMap[partCode] || partCode;
-        const brandName = Object.entries(brandCodeMap).find(([_, c]) => c === brandCode)?.[0] || 'Unknown';
-        return `<li><strong>${partName}</strong> - ${brandName} <button onclick="removeFromCart('${partCode}')" style="float: right; border: none; background: none; color: red; cursor: pointer;">✕</button></li>`;
-    }).join("");
+
+    list.innerHTML = Object.entries(cart)
+        .filter(([k]) => k !== "car")
+        .map(([k, v]) => `<li>${partTypeNameMap[k]}: ${v}
+            <button onclick="removeFromCart('${k}')" style="float:right;border:none;background:none;color:red;">✕</button></li>`)
+        .join("");
 }
 
-function removeFromCart(partType) {
+function removeFromCart(key) {
     const cart = JSON.parse(localStorage.getItem("carCart") || "{}");
-    delete cart[partType];
+    delete cart[key];
     localStorage.setItem("carCart", JSON.stringify(cart));
     renderCart();
 }
@@ -125,112 +174,18 @@ function clearCart() {
     }
 }
 
-function goToCart() {
-    const cart = JSON.parse(localStorage.getItem("carCart") || "{}");
-    if (Object.keys(cart).length === 0) {
-        alert("선택된 파츠가 없습니다.");
-        return;
-    }
-    window.location.href = "/shopping-list";
+function toggleCartBox() {
+    const box = document.getElementById("cartBox");
+    box.style.display = box.style.display === "block" ? "none" : "block";
+    renderCart();
 }
 
-async function searchCar() {
-    const selectedBrand = localStorage.getItem("selectedBrand");
-    const brandCode = brandCodeMap[selectedBrand];
-    const part = JSON.parse(localStorage.getItem("selectedPart"));
-    const selectedCarManufacturer = localStorage.getItem("selectedManufacturer");
-    const selectedCarModel = localStorage.getItem("selectedModel");
-    const selectedCodeName = localStorage.getItem("selectedCodeName");
-    const prefix = brandCode + part.code;
-
-    const queryParams = new URLSearchParams({
-        manufacturer: selectedCarManufacturer,
-        model: selectedCarModel,
-        codeName: selectedCodeName,
-        partTypePrefix: prefix
-    });
-
-    console.log(`/tuning/parts?${queryParams.toString()}`);
-    const response = await fetch(`/tuning/parts?${queryParams.toString()}`);
-    const imagePaths = await response.json();
-
-    const container = document.getElementById("imageContainer");
-    container.innerHTML = '';
-
-    imagePaths.forEach(imagePath => {
-        const card = document.createElement('div');
-        card.className = 'car-card';
-
-        const img = document.createElement('img');
-        img.src = `/uploads/2d/${selectedCarManufacturer}/${selectedCarModel}/${selectedCodeName}/parts/${imagePath}`;
-
-        const name = document.createElement('div');
-        name.className = 'car-name';
-        const fileName = imagePath.split('/').pop();
-        const namePart = fileName.split('_')[1]?.split('.')[0] || fileName.split('.')[0];
-        name.textContent = namePart;
-
-        const detail = document.createElement('div');
-        detail.className = 'car-detail';
-        detail.textContent = selectedBrand;
-
-        card.appendChild(img);
-        card.appendChild(name);
-        card.appendChild(detail);
-
-        const partCode = part.code;
-        const partName = part.name;
-        const brandCode = brandCodeMap[selectedBrand];
-        const key = partCode;
-        const value = fileName.split('.')[0];
-
-        let cart = JSON.parse(localStorage.getItem("carCart") || "{}");
-
-        if (cart[key] === value) {
-            card.classList.add("selected");
-        }
-
-        card.onclick = () => {
-            let prevCart = JSON.parse(localStorage.getItem("carCart") || "{}");
-            let updatedCart = {};
-
-            // car 키는 유지
-            if (prevCart.car) {
-                updatedCart.car = prevCart.car;
-            }
-
-            // 기존 파츠 key 유지 (car 제외)
-            Object.entries(prevCart).forEach(([k, v]) => {
-                if (k !== "car" && k !== key) {
-                    updatedCart[k] = v;
-                }
-            });
-
-            // 클릭한 이미지가 이미 선택된 경우 → 해제
-            if (prevCart[key] === value) {
-                document.querySelectorAll('.car-card').forEach(c => c.classList.remove("selected"));
-            } else {
-                // 선택 상태로 갱신
-                updatedCart[key] = value;
-                document.querySelectorAll('.car-card').forEach(c => c.classList.remove("selected"));
-                card.classList.add("selected");
-            }
-
-            localStorage.setItem("carCart", JSON.stringify(updatedCart));
-            renderCart();
-        };
-        container.appendChild(card);
-    });
-}
-
-
-// 이어서 튜닝하기 버튼 클릭
-document.getElementById("proceedBtn").addEventListener("click", async () => {
+async function goToCart() {
     const cart = JSON.parse(localStorage.getItem("carCart") || "{}");
-    const entries = Object.entries(cart).filter(([key, _]) => key !== "car");   // 차량 제외하고 parts들만 가져오기
+    const entries = Object.entries(cart).filter(([key]) => key !== "car");
 
     if (entries.length === 0) {
-        alert("저장할 파츠가 없습니다.");
+        alert("파츠를 먼저 선택해주세요.");
         return;
     }
 
@@ -242,17 +197,16 @@ document.getElementById("proceedBtn").addEventListener("click", async () => {
                     "Authorization": token,
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({ imageCode: value }) // value는 예: "1wh_a"
+                body: JSON.stringify({ imageCode: value })
             });
 
             if (!res.ok) {
-                console.error("저장 실패:", value);
+                console.error("추가 실패:", value);
             }
-        } catch (err) {
-            console.error("요청 에러:", err);
+        } catch (e) {
+            console.error("요청 실패:", e);
         }
     }
 
-    // 저장이 끝난 후 페이지 이동
-    window.location.href = "/partsList";
-});
+    window.location.href = "/shopping-list";
+}

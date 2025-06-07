@@ -7,7 +7,6 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500;700&display=swap');
         body {
             margin: 0;
             background-color: #f9f9f9;
@@ -21,27 +20,18 @@
             justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid #ddd;
-            position: relative;
-            z-index: 1000;
         }
 
         .logo {
             display: flex;
             align-items: center;
-            gap: 10px;
             font-size: 1.5rem;
             font-weight: 700;
         }
 
         .logo img {
             height: 36px;
-        }
-
-        .car-card img {
-            width: 250px;
-            height: auto;
-            transition: transform 0.3s ease;
-            background-color: transparent; /* ✅ 배경 투명 지정 */
+            margin-right: 10px;
         }
 
         .user-profile {
@@ -67,28 +57,8 @@
             text-decoration: none;
         }
 
-        .write-button:hover {
-            background-color: #555;
-        }
-
-        .cart-icon {
-            width: 28px;
-            height: 28px;
-            cursor: pointer;
-            filter: invert(30%) sepia(100%) saturate(500%) hue-rotate(180deg);
-            transition: transform 0.2s ease;
-        }
-
-        .cart-icon:hover {
-            transform: scale(1.1);
-            cursor: pointer;
-        }
-
-        #cartToggleBtn {
-            display: none;
-        }
-
         .cart-box {
+            display: none;
             position: absolute;
             top: 70px;
             right: 24px;
@@ -97,38 +67,14 @@
             padding: 16px;
             border-radius: 12px;
             max-width: 400px;
-            width: 100%;
-            font-size: 0.95rem;
             z-index: 999;
-            display: none;
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
         }
 
-        .cart-box strong {
-            font-size: 1rem;
-            display: block;
-            margin-bottom: 10px;
-            color: #333;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 6px;
-        }
-
-        .cart-box ul {
-            list-style: none;
-            padding-left: 0;
-            margin: 0;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .cart-box li {
-            padding: 6px 0;
-            border-bottom: 1px solid #eee;
-            color: #444;
-        }
-
-        .cart-box li:last-child {
-            border-bottom: none;
+        .cart-icon {
+            width: 28px;
+            height: 28px;
+            cursor: pointer;
         }
 
         .condition-selector {
@@ -137,8 +83,6 @@
             padding: 0 20px;
             display: flex;
             gap: 12px;
-            z-index: 1;
-            position: relative;
         }
 
         .condition-selector button {
@@ -147,7 +91,7 @@
             border: 1px solid #ccc;
             border-radius: 8px;
             font-weight: 500;
-            cursor: pointer;
+            cursor: default;
         }
 
         .condition-selector button.selected {
@@ -162,8 +106,6 @@
             margin: 0 auto;
             border: 1px solid #ddd;
             height: 210px;
-            z-index: 0;
-            position: relative;
         }
 
         .manufacturer-list {
@@ -271,9 +213,11 @@
             margin-top: 8px;
         }
 
-        .car-detail {
-            font-size: 0.9rem;
-            color: #555;
+        .car-card.selected {
+            border: 3px solid #007BFF;
+            background-color: #eef5ff;
+            border-radius: 12px;
+            transition: all 0.3s ease;
         }
 
         #proceedBtn {
@@ -288,29 +232,7 @@
             font-weight: bold;
             font-size: 1rem;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            z-index: 1000;
             cursor: pointer;
-            transition: background-color 0.2s ease;
-        }
-
-        #proceedBtn:hover {
-            background-color: #0056b3;
-        }
-
-        .car-card.selected {
-            border: 3px solid #007BFF;
-            background-color: #eef5ff;
-            border-radius: 12px;
-            transition: all 0.3s ease;
-        }
-
-        .cart-icon {
-            font-size: 20px;
-            cursor: pointer;
-            vertical-align: middle;
-            line-height: 1;
-            position: relative;
-            top: 5px;
         }
     </style>
 </head>
@@ -318,16 +240,12 @@
 
 <header class="header">
     <div class="logo">
-        <img src="/image/logo.png" alt="로고">
-        Carmmunity
+        <img src="/image/logo.png" alt="로고"> Carmmunity
     </div>
     <div class="header-right">
         <a href="/postCreate" class="write-button">+ 글쓰기</a>
         <div class="cart-box" id="cartBox">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <strong>장바구니 목록</strong>
-                <button onclick="toggleCartBox()" style="background: none; border: none; font-size: 18px; cursor: pointer;">&times;</button>
-            </div>
+            <strong>장바구니 목록</strong>
             <ul id="cartItems"></ul>
             <div style="display: flex; justify-content: space-between; margin-top: 10px;">
                 <button class="btn btn-sm btn-danger" onclick="clearCart()">전체 삭제</button>
@@ -339,12 +257,13 @@
     </div>
 </header>
 
+<!-- 상단 상태 바: 제조사 | 파츠명 -->
 <section class="condition-selector">
-    <button class="selected">제조사</button>
-    <button disabled>소재</button>
-    <button disabled>컬러</button>
+    <button id="step1" class="selected">제조사</button>
+    <button id="step2" disabled>파츠명</button>
 </section>
 
+<!-- 중앙 선택 UI (car-list 동일 구조) -->
 <div class="container-wrapper">
     <div class="manufacturer-list" id="manufacturerList"></div>
     <div class="model-list">
@@ -352,12 +271,15 @@
             <p>제조사를 선택해주세요.</p>
         </div>
         <div class="search-button-box">
-            <button id="searchBtn" onclick="searchCar()" disabled>선택한 조건 검색하기</button>
+            <button id="searchBtn" onclick="searchParts()" disabled>선택한 파츠 검색</button>
         </div>
     </div>
 </div>
 
+<!-- 검색 결과 이미지 -->
 <section class="image-grid" id="imageContainer"></section>
+
+<!-- 다음 단계 이동 버튼 -->
 <button id="proceedBtn" onclick="goToCart()">이어서 튜닝하기 →</button>
 
 <script src="/js/parts-list.js"></script>

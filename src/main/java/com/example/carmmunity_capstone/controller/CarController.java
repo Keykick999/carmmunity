@@ -35,7 +35,7 @@ public class CarController {
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + glbFile.getFilename() + "\"")
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)  // 🔥 중요
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(glbFile);
     }
 

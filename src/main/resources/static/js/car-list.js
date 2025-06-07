@@ -5,7 +5,6 @@ if (!token || token === "Bearer null") {
     window.location.href = "/";
 }
 
-// 사용자 프로필 로딩
 document.addEventListener("DOMContentLoaded", () => {
     fetch("/users/info", { headers: { Authorization: token } })
         .then(res => res.json())
@@ -14,84 +13,105 @@ document.addEventListener("DOMContentLoaded", () => {
             if (user.profileImagePath) {
                 profileImg.src = user.profileImagePath;
             }
-        })
-        .catch(err => {
-            console.error("회원 정보 로딩 실패:", err);
         });
 
-    initSelectBoxes();
+    renderManufacturers();
 });
 
-// 초기 셀렉트 박스 구성
-function initSelectBoxes() {
-    const manufacturerSelect = document.getElementById("manufacturerSelect");
-    const modelSelect = document.getElementById("modelSelect");
-    const codeNameSelect = document.getElementById("codeNameSelect");
+const modelMap = {
+    bmw: ["1시리즈", "2시리즈", "3시리즈", "4시리즈", "M2", "M3", "M4"],
+    benz: ["A클래스", "C클래스", "E클래스"],
+    audi: ["A3", "A5", "A6", "A7"]
+};
 
-    const modelMap = {
-        bmw: ["1시리즈", "2시리즈", "3시리즈", "4시리즈", "M2", "M3", "M4"],
-        benz: ["A클래스", "C클래스", "E클래스"],
-        audi: ["A3", "A5", "A6", "A7"]
-    };
+const codeNameMap = {
+    M4: ["g82", "f82", "e92"],
+    M3: ["g80", "f80", "e90"]
+};
 
-    const codeNameMap = {
-        M4: ["g82", "f82", "e92"],
-        M3: ["g80", "f80", "e90"]
-    };
+let selectedManufacturer = "";
+let selectedModel = "";
+let selectedCodeName = "";
 
-    manufacturerSelect.addEventListener("change", () => {
-        const selectedManu = manufacturerSelect.value;
-        modelSelect.innerHTML = `<option value="">차량명을 선택하세요</option>`;
-        codeNameSelect.innerHTML = `<option value="">코드네임을 선택하세요</option>`;
-        codeNameSelect.disabled = true;
-        document.getElementById("searchBtn").disabled = true;
-
-        if (selectedManu) {
-            modelSelect.disabled = false;
-            (modelMap[selectedManu] || []).forEach(model => {
-                const opt = document.createElement("option");
-                opt.value = model;
-                opt.textContent = model;
-                modelSelect.appendChild(opt);
-            });
-        } else {
-            modelSelect.disabled = true;
-        }
-    });
-
-    modelSelect.addEventListener("change", () => {
-        const selectedModel = modelSelect.value;
-        codeNameSelect.innerHTML = `<option value="">코드네임을 선택하세요</option>`;
-        document.getElementById("searchBtn").disabled = true;
-
-        if (selectedModel && codeNameMap[selectedModel]) {
-            codeNameSelect.disabled = false;
-            codeNameMap[selectedModel].forEach(code => {
-                const opt = document.createElement("option");
-                opt.value = code;
-                opt.textContent = code.toUpperCase();
-                codeNameSelect.appendChild(opt);
-            });
-        } else {
-            codeNameSelect.disabled = true;
-        }
-    });
-
-    codeNameSelect.addEventListener("change", () => {
-        const valid = manufacturerSelect.value && modelSelect.value && codeNameSelect.value;
-        document.getElementById("searchBtn").disabled = !valid;
+function renderManufacturers() {
+    const container = document.getElementById("manufacturerList");
+    container.innerHTML = "";
+    Object.keys(modelMap).forEach(name => {
+        const div = document.createElement("div");
+        div.className = "model-item";
+        div.textContent = name.toUpperCase();
+        div.onclick = () => selectManufacturer(name, div);
+        container.appendChild(div);
     });
 }
 
-// 차량 검색
+function selectManufacturer(name, element) {
+    selectedManufacturer = name;
+    selectedModel = "";
+    selectedCodeName = "";
+    document.getElementById("searchBtn").disabled = true;
+
+    document.querySelectorAll("#manufacturerList .model-item").forEach(el => el.classList.remove("selected"));
+    element.classList.add("selected");
+
+    renderModels(name); // ✅ 이걸 반드시 호출해야 모델 선택 UI가 뜸
+    document.getElementById("codeNameContainer").innerHTML = "<p>코드네임을 선택해주세요.</p>";
+}
+
+
+function renderModels(manufacturer) {
+    const container = document.getElementById("modelContainer");
+    container.innerHTML = "";
+    (modelMap[manufacturer] || []).forEach(model => {
+        const div = document.createElement("div");
+        div.className = "model-item";
+        div.textContent = model;
+        div.onclick = () => selectModel(model, div);
+        container.appendChild(div);
+    });
+}
+
+function selectModel(model, element) {
+    selectedModel = model;
+    selectedCodeName = "";
+    document.getElementById("searchBtn").disabled = true;
+
+    document.querySelectorAll("#modelContainer .model-item").forEach(el => el.classList.remove("selected"));
+    element.classList.add("selected");
+
+    renderCodeNames(model); // ✅ 이걸 호출해야 코드네임 UI가 뜸
+}
+
+
+function renderCodeNames(model) {
+    const container = document.getElementById("codeNameContainer");
+    container.innerHTML = "";
+    (codeNameMap[model] || []).forEach(code => {
+        const div = document.createElement("div");
+        div.className = "model-item";
+        div.textContent = code.toUpperCase();
+        div.onclick = () => selectCodeName(code, div);
+        container.appendChild(div);
+    });
+}
+
+function selectCodeName(codeName, element) {
+    selectedCodeName = codeName;
+    document.querySelectorAll("#codeNameContainer .model-item").forEach(el => el.classList.remove("selected"));
+    element.classList.add("selected");
+
+    if (selectedManufacturer && selectedModel && selectedCodeName) {
+        document.getElementById("searchBtn").disabled = false;
+    }
+}
+
 async function searchCarImages() {
-    const manu = document.getElementById("manufacturerSelect").value.toLowerCase();
-    const model = document.getElementById("modelSelect").value.toLowerCase();
-    const code = document.getElementById("codeNameSelect").value.toLowerCase();
+    const manu = selectedManufacturer.toLowerCase();
+    const model = selectedModel.toLowerCase();
+    const code = selectedCodeName.toLowerCase();
 
     const response = await fetch(`/tuning/cars?manufacturer=${manu}&model=${model}&codeName=${code}`);
     const imageNames = await response.json();
-    console.log(imageNames);
 
     const container = document.getElementById("imageContainer");
     container.innerHTML = "";
@@ -104,7 +124,6 @@ async function searchCarImages() {
         card.className = "car-card";
 
         const img = document.createElement("img");
-        console.log(`/uploads/2d/${manu}/${model}/${code}/cars/${name}`);
         img.src = `/uploads/2d/${manu}/${model}/${code}/cars/${name}`;
         img.alt = name;
 
@@ -130,7 +149,6 @@ async function searchCarImages() {
                     localStorage.removeItem("carCart");
                     card.classList.remove("selected");
                 }
-                // 아니오: 아무 것도 하지 않음
             } else if (current) {
                 if (confirm("이미 차량이 선택되어 있습니다. 차량을 변경하시겠습니까?")) {
                     document.querySelectorAll(".car-card").forEach(c => c.classList.remove("selected"));
@@ -140,7 +158,6 @@ async function searchCarImages() {
                     localStorage.setItem("selectedModel", model);
                     localStorage.setItem("selectedCodeName", code);
                 }
-                // 아니오: 아무 것도 하지 않음
             } else {
                 card.classList.add("selected");
                 localStorage.setItem("carCart", JSON.stringify({ car: clicked }));
@@ -152,10 +169,6 @@ async function searchCarImages() {
 
         container.appendChild(card);
     });
-}
-
-function goToCartPage() {
-    window.location.href = "/shopping-list";
 }
 
 function goToPartsList() {
@@ -183,36 +196,4 @@ function goToPartsList() {
             console.error("등록 실패:", err);
             alert("차량 등록에 실패했습니다.");
         });
-}
-
-function toggleCartBox() {
-    const box = document.getElementById("cartBox");
-    box.style.display = box.style.display === "block" ? "none" : "block";
-    renderCart();
-}
-
-function renderCart() {
-    const list = document.getElementById("cartItems");
-    const cart = JSON.parse(localStorage.getItem("carCart") || "{}");
-
-    list.innerHTML = Object.entries(cart).map(([key, value]) => `
-    <li>
-        ${key}: ${value}
-        <button onclick="removeFromCart('${key}')" style="float: right; border: none; background: none; color: red; cursor: pointer;">✕</button>
-    </li>
-    `).join("");
-}
-
-function removeFromCart(key) {
-    const cart = JSON.parse(localStorage.getItem("carCart") || "{}");
-    delete cart[key];
-    localStorage.setItem("carCart", JSON.stringify(cart));
-    renderCart();
-}
-
-function clearCart() {
-    if (confirm("장바구니를 모두 \?")) {
-        localStorage.removeItem("carCart");
-        renderCart();
-    }
 }
