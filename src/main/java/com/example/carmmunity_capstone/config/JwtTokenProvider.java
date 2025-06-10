@@ -36,7 +36,7 @@ public class JwtTokenProvider {
         return Jwts.builder()
                 .setSubject(userId)
                 .setIssuedAt(now)
-                .setExpiration(expiry)
+                .setExpiration(expiry)  // 유효 시간 설정
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }

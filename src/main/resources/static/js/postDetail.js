@@ -230,11 +230,20 @@ function loadReplies(parentCommentId, $replyList, replyPage = 0) {
                     </button>
                 `;
 
+                const authorButtons = reply.authorFlag
+                    ? `
+                        <button class="btn btn-sm btn-outline-primary me-2" onclick="editReply(${reply.commentId}, this)">수정</button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteReply(${reply.commentId})">삭제</button>
+                    `
+                    : '';
+
                 return `
-                    <div class="reply">
+                    <div class="reply" data-reply-id="${reply.commentId}">
                         <strong>${escapeHtml(reply.nickName)}</strong><br>
-                        ${escapeHtml(reply.commentContent)}
+                        <div class="reply-content">${escapeHtml(reply.commentContent)}</div>
+                        <div class="edit-reply-wrapper"></div>
                         ${likeButtonHtml}
+                        ${authorButtons}
                     </div>
                 `;
             }).join('');
@@ -260,6 +269,80 @@ function loadReplies(parentCommentId, $replyList, replyPage = 0) {
         }
     });
 }
+
+
+function editReply(replyId, buttonEl) {
+    const $reply = $(buttonEl).closest('.reply');
+    const $contentDiv = $reply.find('.reply-content');
+    const $wrapper = $reply.find('.edit-reply-wrapper');
+
+    if ($wrapper.children().length > 0) return;
+
+    const originalContent = $contentDiv.text().trim();
+    $contentDiv.hide();
+
+    const $input = $(`<input type="text" class="edit-input form-control mb-2" value="${escapeHtml(originalContent)}">`);
+    const $spinner = $(`<div class="spinner-border text-primary mt-2 ms-2" style="display:none; width: 1.5rem; height: 1.5rem;" role="status"><span class="visually-hidden">Loading...</span></div>`);
+    const $saveBtn = $(`<button class="btn btn-outline-primary btn-sm me-2">저장</button>`);
+    const $cancelBtn = $(`<button class="btn btn-outline-secondary btn-sm">취소</button>`);
+
+    const $btnGroup = $('<div class="d-flex align-items-center mt-2"></div>')
+        .append($saveBtn)
+        .append($cancelBtn)
+        .append($spinner);
+
+    $wrapper.append($input).append($btnGroup);
+
+    $saveBtn.on('click', function () {
+        const newContent = $input.val().trim();
+        if (!newContent || newContent === originalContent) return;
+
+        $saveBtn.hide();
+        $cancelBtn.hide();
+        $spinner.show();
+
+        $.ajax({
+            url: `/comments/${replyId}`,
+            type: 'PATCH',
+            contentType: 'application/json',
+            headers: { 'Authorization': `Bearer ${token}` },
+            data: JSON.stringify({ content: newContent }),
+            success: function () {
+                $contentDiv.text(newContent).show();
+                $wrapper.empty();
+            },
+            error: function () {
+                $spinner.hide();
+                $saveBtn.show();
+                $cancelBtn.show();
+                alert("❌ 답글 수정에 실패했습니다.");
+            }
+        });
+    });
+
+    $cancelBtn.on('click', function () {
+        $wrapper.empty();
+        $contentDiv.show();
+    });
+}
+
+function deleteReply(replyId) {
+    if (!confirm("정말로 이 답글을 삭제하시겠습니까?")) return;
+
+    $.ajax({
+        url: `/comments/${replyId}`,
+        type: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+        success: function () {
+            alert("🗑️ 답글이 삭제되었습니다.");
+            $(`.reply[data-reply-id="${replyId}"]`).remove();
+        },
+        error: function () {
+            alert("❌ 답글 삭제에 실패했습니다.");
+        }
+    });
+}
+
 
 function submitComment() {
     const content = $('#commentInput').val();

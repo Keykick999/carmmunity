@@ -8,6 +8,7 @@ import com.example.carmmunity_capstone.exception.UnAuthorizedAccessException;
 import com.example.carmmunity_capstone.repository.CommentLikeRepository;
 import com.example.carmmunity_capstone.repository.CommentRepository;
 import com.example.carmmunity_capstone.repository.PostRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class CommentService {
 
     private final CommentRepository commentRepository;
@@ -26,12 +28,6 @@ public class CommentService {
     private final PostRepository postRepository;
     private final UserService userService;
 
-    public CommentService(CommentRepository commentRepository, CommentLikeRepository commentLikeRepository, PostRepository postRepository, UserService userService) {
-        this.commentRepository = commentRepository;
-        this.commentLikeRepository = commentLikeRepository;
-        this.postRepository = postRepository;
-        this.userService = userService;
-    }
 
 
     // 댓글 저장
@@ -149,26 +145,23 @@ public class CommentService {
     // 댓글 좋아요
     @Transactional
     public CommentLikeResponse likeComment(Integer commentId, CommentLikeRequest request) {
-        // JWT 토큰을 통해 인증된 회원 정보 조회
         User user = userService.getAuthenticatedUser();
 
+        // 🚨 기존의 existsById 제거하고, 락 걸고 가져오기
+        Comment comment = commentRepository.findByIdForUpdate(commentId)
+                .orElseThrow(() -> new CommentNotFoundException("댓글이 존재하지 않습니다."));
 
-        // 댓글 찾기
-        if (!commentRepository.existsById(commentId)) {
-            throw new CommentNotFoundException("댓글이 존재하지 않습니다.");
-        }
-
-        // 댓글 좋아요 있는지 찾기
         CommentLikeId commentLikeId = new CommentLikeId(commentId, user.getUserId());
         CommentLike commentLike = toggleOrCreateLike(commentLikeId);
         commentLikeRepository.save(commentLike);
 
-        // 댓글 테이블에 좋아요 수 반영
+        // 🚨 동시에 comment 수정
         if (commentLike.getLikeStatus()) {
-            commentRepository.incrementCommentLike(commentId);
+            comment.setTotalLike(comment.getTotalLike() + 1);
         } else {
-            commentRepository.decrementCommentLike(commentId);
+            comment.setTotalLike(comment.getTotalLike() - 1);
         }
+        commentRepository.save(comment);
 
         return new CommentLikeResponse(commentLike.getLikeStatus());
     }

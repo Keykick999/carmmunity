@@ -1,7 +1,6 @@
 const token = localStorage.getItem("token");
 const urlParams = new URLSearchParams(window.location.search);
 const postId = urlParams.get("postId");
-alert(postId);
 
 
 // 게시글 정보 불러오기

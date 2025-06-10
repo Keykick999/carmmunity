@@ -1,5 +1,4 @@
 package com.example.carmmunity_capstone.controller;
-
 import com.example.carmmunity_capstone.dto.*;
 import com.example.carmmunity_capstone.service.PostService;
 import org.springframework.core.io.Resource;

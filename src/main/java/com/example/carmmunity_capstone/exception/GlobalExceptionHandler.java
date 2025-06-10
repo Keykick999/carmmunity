@@ -10,18 +10,10 @@ import java.util.Map;
  * 전역 예외 처리 클래스
  * 모든 컨트롤러에서 발생하는 예외를 잡아서 공통 형식으로 응답 처리합니다.
  */
+
+// 전역 예외 처리 클래스
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-
-    // 일반 예외 처리
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<?> handleException(Exception e) {
-        return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "서버 오류 발생", "message", e.getMessage()));
-    }
-
-
     // 게시글 없음
     @ExceptionHandler(PostNotFoundException.class)
     public ResponseEntity<String> handlePostNotFoundException(PostNotFoundException e) {
@@ -30,13 +22,6 @@ public class GlobalExceptionHandler {
                 .body(e.getMessage());
     }
 
-    // 댓글 없음
-    @ExceptionHandler(CommentNotFoundException.class)
-    public ResponseEntity<String> handleCommentNotFoundException(CommentNotFoundException e) {
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(e.getMessage());
-    }
 
     // 유효하지 않은 토큰
     @ExceptionHandler(InvalidTokenException.class)
@@ -53,6 +38,24 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.FORBIDDEN)
                 .body(e.getMessage());
     }
+
+
+    // 댓글 없음
+    @ExceptionHandler(CommentNotFoundException.class)
+    public ResponseEntity<String> handleCommentNotFoundException(CommentNotFoundException e) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(e.getMessage());
+    }
+
+    // 일반 예외 처리
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<?> handleException(Exception e) {
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "서버 오류 발생", "message", e.getMessage()));
+    }
+
 
     // 회원 튜닝 차량 개수 초과
     @ExceptionHandler(TooManyUserCarsException.class)

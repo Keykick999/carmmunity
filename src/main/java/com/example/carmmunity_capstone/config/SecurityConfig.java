@@ -36,10 +36,13 @@ public class SecurityConfig {
                 .build();
     }
 
+    // 비밀번호 암호화를 위한 인터페이스
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(); // 비밀번호 암호화를 위한 BCrypt 사용
+        return new BCryptPasswordEncoder();
     }
+
+    
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {

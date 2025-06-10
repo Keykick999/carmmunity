@@ -11,7 +11,7 @@ import jakarta.mail.internet.MimeMessage;
 
 @Component
 @RequiredArgsConstructor
-public class SmtpEmailSender implements EmailSender {
+public class SmtpEmailSender implements EmailSender {   // 이메일 전송을 위한 클래스
 
     private final JavaMailSender mailSender;
 
@@ -23,7 +23,7 @@ public class SmtpEmailSender implements EmailSender {
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(text, false);
-            helper.setFrom("brian7536@gmail.com"); // ← 실제 네이버 이메일 주소로 교체
+            helper.setFrom("brian7536@gmail.com");
             mailSender.send(message);
         } catch (MessagingException e) {
             throw new RuntimeException("이메일 전송 실패: " + e.getMessage());
