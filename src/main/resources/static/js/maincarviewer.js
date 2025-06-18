@@ -10,14 +10,13 @@ const aspect = width / height;
 // 씬 생성
 const scene = new THREE.Scene();
 // scene.background = new THREE.Color(0xf5f6fa);
-scene.background = new THREE.Color(0xffffff); // 완전 흰색 → ✅
+scene.background = new THREE.Color(0xffffff); //
 
 
 // OrthographicCamera 사용 (크기 고정)
 const d = 4; // zoom 비율
 const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 0.1, 1000);
-// camera.position.set(0, 1.5, 10);    // 6 -> 10
-camera.position.set(0, -3.0, 10);    // 6 -> 10
+camera.position.set(0, -3.0, 10);
 camera.lookAt(0, 0, 0);
 
 // 렌더러 생성 및 색상 보정
@@ -47,22 +46,12 @@ spotLight.target.position.set(0, 0, 0);
 scene.add(spotLight, spotLight.target);
 
 
-
-// TODO 기존 조명 코드
-// const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
-// const directionalLight = new THREE.DirectionalLight(0xffffff, 2.0);
-// directionalLight.position.set(10, 10, 10);
-// scene.add(ambientLight, directionalLight);
-
-
-// TODO 렌더러 그림자 최적화 및 감마 보정 추가
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; // 고급 톤매핑
 renderer.toneMappingExposure = 1.25;
 
 
-// TODO 바닥 추가 (그림자 받는 Plane)
 const planeGeo = new THREE.PlaneGeometry(100, 100);
 const planeMat = new THREE.MeshStandardMaterial({
     color: 0xf0f0f0,
@@ -112,7 +101,6 @@ function loadCar(slotId) {
                         if (child.material.map) child.material.map.dispose();
                         child.material.dispose();
 
-                        // TODO 새로운 재질 적용 (더 리얼하고 간지나는 느낌)
                         child.material = new THREE.MeshStandardMaterial({
                             color: 0xffffff,
                             metalness: 0.9,
@@ -127,29 +115,6 @@ function loadCar(slotId) {
                 });
             }
 
-            // loader.parse(buffer, '', (gltf) => {
-            //     currentModel = gltf.scene;
-            //
-            //     const box = new THREE.Box3().setFromObject(currentModel);
-            //     const center = box.getCenter(new THREE.Vector3());
-            //     const size = box.getSize(new THREE.Vector3());
-            //
-            //     // 차량 중앙 정렬 + 화면에 더 꽉 차도록 크기 조정
-            //     currentModel.position.sub(center);
-            //     // TODO 원래 position
-            //     // currentModel.position.y -= size.y * 0.6;
-            //     currentModel.position.y -= size.y * 250.0;
-            //     // TODO 원래 scale
-            //     // currentModel.scale.set(0.8, 0.8, 0.8); // 원래 사이즈
-            //     currentModel.scale.set(350, 350, 350); // 더 키움
-            //
-            //     scene.add(currentModel);
-            //
-            //     // 회전 중심을 화면 하단 기준으로 보정
-            //     controls.target.set(0, -size.y * 0.3, 0);
-            //     controls.update();
-            // });
-            // TODO 차량 등장하는 느낌
             loader.parse(buffer, '', (gltf) => {
                 currentModel = gltf.scene;
 
@@ -161,7 +126,7 @@ function loadCar(slotId) {
                 currentModel.position.sub(center);
                 currentModel.position.y -= size.y * 250.0;
 
-                // 🎯 등장 애니메이션: 초기 scale 0.01로 시작
+                // 등장 애니메이션: 초기 scale 0.01로 시작
                 const targetScale = new THREE.Vector3(350, 350, 350);
                 currentModel.scale.set(0.01, 0.01, 0.01);  // 작게 시작
                 scene.add(currentModel);
@@ -170,7 +135,6 @@ function loadCar(slotId) {
                 controls.target.set(0, -size.y * 0.3, 0);
                 controls.update();
 
-                // 🎬 scale lerp로 점점 커지게
                 let progress = 0;
                 const scaleUp = () => {
                     if (progress < 1) {

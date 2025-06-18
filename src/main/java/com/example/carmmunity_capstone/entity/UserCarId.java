@@ -21,7 +21,6 @@ public class UserCarId implements Serializable {
     @Column(name = "Car_ID")
     private Integer carId;
 
-    // equals(), hashCode() 구현
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

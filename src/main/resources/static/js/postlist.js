@@ -5,13 +5,13 @@ let page = 0;
 let loading = false;
 let finished = false;
 
-// ✅ 현재 검색어 기억
+// 현재 검색어 기억
 let currentKeyword = '';
 
-// ✅ 감시 대상
+// 감시 대상
 const observerTarget = document.getElementById('observerTarget');
 
-// ✅ 프로필 이미지 설정 (초기 실행)
+// 프로필 이미지 설정 (초기 실행)
 document.addEventListener("DOMContentLoaded", () => {
     const token = localStorage.getItem("token");
     if (!token) return;
@@ -34,7 +34,7 @@ document.addEventListener("DOMContentLoaded", () => {
         .catch(err => console.error("❌ 프로필 이미지 로딩 실패:", err));
 });
 
-// ✅ 검색 이벤트
+// 검색 이벤트
 searchButton.addEventListener('click', handleSearch);
 searchInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
@@ -50,10 +50,9 @@ function handleSearch() {
     fetchPosts();
 }
 
-// ✅ IntersectionObserver 설정
+// IntersectionObserver 설정
 const observer = new IntersectionObserver((entries) => {
     if (entries[0].isIntersecting && !loading && !finished) {
-        console.log('✅ observerTarget이 화면에 나타났습니다. 다음 페이지 로딩 시도!');
         fetchPosts();
     }
 }, {
@@ -62,10 +61,9 @@ const observer = new IntersectionObserver((entries) => {
 });
 observer.observe(observerTarget); // 감시 시작
 
-// ✅ 게시글 불러오기
+// 게시글 불러오기
 function fetchPosts() {
     loading = true;
-    console.log('📨 fetchPosts() 호출. page:', page, 'keyword:', currentKeyword);
 
     const params = new URLSearchParams({
         page,
@@ -83,7 +81,6 @@ function fetchPosts() {
 
             if (posts.length === 0) {
                 finished = true;
-                console.log('⛔ 더 이상 불러올 게시글이 없습니다.');
                 return;
             }
 
@@ -94,7 +91,7 @@ function fetchPosts() {
         .finally(() => loading = false);
 }
 
-// ✅ 게시글 카드 렌더링
+// 게시글 카드 렌더링
 function renderPostCard(post) {
     const card = document.createElement('div');
     card.className = 'post-card';
@@ -118,5 +115,5 @@ function renderPostCard(post) {
     postGrid.appendChild(card);
 }
 
-// ✅ 페이지 진입 시 첫 로딩
+// 페이지 진입 시 첫 로딩
 handleSearch();

@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const introInput = document.getElementById("introduction");
     const modifyForm = document.getElementById("modifyForm");
 
-    // 🔹 기존 회원 정보 불러오기
+    // 기존 회원 정보 불러오기
     try {
         const response = await fetch("/users/info", {
             method: "GET",
@@ -36,7 +36,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    // 🔹 이미지 업로드 → 미리보기로 표시
+    // 이미지 업로드 → 미리보기로 표시
     uploadInput.addEventListener("change", () => {
         const file = uploadInput.files[0];
         if (file) {
@@ -49,7 +49,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    // 🔹 기본 이미지 클릭 시 미리보기로 반영
+    // 기본 이미지 클릭 시 미리보기로 반영
     defaultImages.forEach(img => {
         img.addEventListener("click", () => {
             preview.src = img.src;
@@ -63,14 +63,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         defaultImages.forEach(img => img.classList.remove("selected"));
     }
 
-    // 🔹 저장 버튼 제출 처리
+    // 저장 버튼 제출 처리
     modifyForm.addEventListener("submit", async (e) => {
         e.preventDefault();
 
         const file = uploadInput.files[0];
         const selectedDefault = document.querySelector('.default-images img.selected');
 
-        // ✅ 업로드 이미지가 있는 경우
+        // 업로드 이미지가 있는 경우
         if (file) {
             const formData = new FormData();
             formData.append("profileImage", file);
@@ -94,7 +94,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
 
         }
-        // ✅ 기본 이미지만 선택한 경우
+        // 기본 이미지만 선택한 경우
         else if (selectedDefault) {
             const json = {
                 nickname: nicknameInput.value,
@@ -119,7 +119,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 alert("수정 실패");
             }
         }
-        // ❌ 이미지가 선택되지 않은 경우
+        // 이미지가 선택되지 않은 경우
         else {
             alert("프로필 이미지를 선택하거나 업로드해주세요.");
         }

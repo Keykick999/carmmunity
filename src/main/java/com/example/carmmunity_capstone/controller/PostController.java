@@ -96,15 +96,3 @@ public class PostController {
                 .body(image);
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-

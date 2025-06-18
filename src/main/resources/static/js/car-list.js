@@ -54,7 +54,7 @@ function selectManufacturer(name, element) {
     document.querySelectorAll("#manufacturerList .model-item").forEach(el => el.classList.remove("selected"));
     element.classList.add("selected");
 
-    renderModels(name); // ✅ 이걸 반드시 호출해야 모델 선택 UI가 뜸
+    renderModels(name);
     document.getElementById("codeNameContainer").innerHTML = "<p>코드네임을 선택해주세요.</p>";
 }
 
@@ -79,7 +79,7 @@ function selectModel(model, element) {
     document.querySelectorAll("#modelContainer .model-item").forEach(el => el.classList.remove("selected"));
     element.classList.add("selected");
 
-    renderCodeNames(model); // ✅ 이걸 호출해야 코드네임 UI가 뜸
+    renderCodeNames(model);
 }
 
 

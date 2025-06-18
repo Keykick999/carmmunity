@@ -5,7 +5,6 @@ import com.example.carmmunity_capstone.repository.TermRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 
 @Component
 public class TermDataInitializer implements CommandLineRunner {
@@ -26,8 +25,6 @@ public class TermDataInitializer implements CommandLineRunner {
 
         insertIfNotExists("T003", "마케팅 정보 수신 동의", false, 3,
                 "신상품 소식, 이벤트 안내 등 마케팅 목적의 이메일/SMS를 수신하는 것에 동의합니다. ...");
-
-        System.out.println("✅ 약관 확인 및 필요 시 삽입 완료");
     }
 
     private void insertIfNotExists(String code, String title, boolean required, int order, String content) {
@@ -40,9 +37,6 @@ public class TermDataInitializer implements CommandLineRunner {
                     .displayOrder(order)
                     .build();
             termRepository.save(term);
-            System.out.println("➕ " + title + " 삽입됨");
-        } else {
-            System.out.println("✔️ " + title + " 이미 존재함");
         }
     }
 }

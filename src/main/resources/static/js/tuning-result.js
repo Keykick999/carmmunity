@@ -1,4 +1,3 @@
-camera.right = d * aspect;
 import * as THREE from 'three';
 import { GLTFLoader } from 'GLTFLoader';
 import { OrbitControls } from 'OrbitControls';
@@ -39,11 +38,7 @@ container.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xffffff);
-// scene.background = new THREE.Color(0xf5f6fa);
-// scene.add(new THREE.AmbientLight(0xffffff, 1.5));
-// const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
-// dirLight.position.set(10, 10, 10);
-// scene.add(dirLight);
+
 
 // 바닥 Plane
 const planeGeo = new THREE.PlaneGeometry(100, 100);
@@ -95,7 +90,7 @@ fetch('/shopping/compose', {
             if (currentModel) scene.remove(currentModel);
             currentModel = gltf.scene;
 
-            // ✅ 각 child에 재질 및 그림자 설정
+            // 각 child에 재질 및 그림자 설정
             currentModel.traverse(child => {
                 if (child.isMesh) {
                     if (child.material && child.material.isMeshStandardMaterial) {
@@ -116,11 +111,11 @@ fetch('/shopping/compose', {
             currentModel.position.sub(center);
             currentModel.position.y -= size.y * 225.0;
 
-            // ✅ 3D 모델 크기를 0에서 시작 → 부드럽게 키우기
+            // 3D 모델 크기를 0에서 시작 → 부드럽게 키우기
             currentModel.scale.set(0.01, 0.01, 0.01);
             scene.add(currentModel);
 
-            // ✅ 등장 애니메이션
+            // 등장 애니메이션
             const targetScale = new THREE.Vector3(350, 350, 350);
             let progress = 0;
             const scaleUp = () => {

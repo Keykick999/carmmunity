@@ -66,7 +66,6 @@ public class CommentService {
                 .mentionedUser(mentionedUser)
                 .build();
         commentRepository.save(comment);
-        System.out.println("comment = " + comment);
     }
 
 
@@ -147,7 +146,7 @@ public class CommentService {
     public CommentLikeResponse likeComment(Integer commentId, CommentLikeRequest request) {
         User user = userService.getAuthenticatedUser();
 
-        // 🚨 기존의 existsById 제거하고, 락 걸고 가져오기
+        // 기존의 existsById 제거하고, 락 걸고 가져오기
         Comment comment = commentRepository.findByIdForUpdate(commentId)
                 .orElseThrow(() -> new CommentNotFoundException("댓글이 존재하지 않습니다."));
 
@@ -155,7 +154,7 @@ public class CommentService {
         CommentLike commentLike = toggleOrCreateLike(commentLikeId);
         commentLikeRepository.save(commentLike);
 
-        // 🚨 동시에 comment 수정
+        // 동시에 comment 수정
         if (commentLike.getLikeStatus()) {
             comment.setTotalLike(comment.getTotalLike() + 1);
         } else {

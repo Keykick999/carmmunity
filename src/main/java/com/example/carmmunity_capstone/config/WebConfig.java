@@ -9,6 +9,6 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("file:///C:/uploads/"); // 슬래시 3개 주의!
+                .addResourceLocations("file:///C:/uploads/");
     }
 }

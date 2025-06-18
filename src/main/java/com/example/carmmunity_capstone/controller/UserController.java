@@ -84,14 +84,4 @@ public class UserController {
         );
         return ResponseEntity.ok("비밀번호가 성공적으로 변경되었습니다.");
     }
-
-    /*
-    // 회원 탈퇴
-    @DeleteMapping("/withdraw")
-    public ResponseEntity<Void> withdraw(@RequestHeader("Authorization") String token) {
-        String userId = jwtTokenProvider.getUserIdFromToken(token.replace("Bearer ", ""));
-        userService.withdraw(userId);
-        return ResponseEntity.ok().build();
-    }
-    */
 }

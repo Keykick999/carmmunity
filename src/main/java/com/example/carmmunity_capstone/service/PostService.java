@@ -45,7 +45,6 @@ public class PostService {
     }
 
 
-    // TODO 전부 user 관련 부분 추가해야 관련 저장 값이나 권한 확인 전부
     // 게시글 저장
     @Transactional
     public void save( PostRequest postSaveRequest, MultipartFile postImage, MultipartFile thumbnailImage) {
@@ -183,7 +182,7 @@ public class PostService {
                 imageFile.transferTo(dest);
 
 
-                // ✅ 4. DB에는 상대 경로로 저장
+                // DB에는 상대 경로로 저장
                 return "/uploads/" + storedFileName;
 
             } catch (IOException e) {
@@ -223,25 +222,25 @@ public class PostService {
     public PostLikeResponse likePost(Integer postId, PostLikeRequest request) {
         User user = userService.getAuthenticatedUser();
 
-        // 게시글 찾기
-        if (!postRepository.existsById(postId)) {
+        Post post = postRepository.findByIdForUpdate(postId);  // 락 획득
+        if (post == null || post.getDeletedAt() != null) {
             throw new PostNotFoundException("게시글이 존재하지 않습니다.");
         }
 
-        // 게시글 좋아요 있는지 찾기
         PostLikeId postLikeId = new PostLikeId(postId, user.getUserId());
         PostLike postLike = toggleOrCreateLike(postLikeId);
         postLikeRepository.save(postLike);
 
-        // 게시글 테이블에 좋아요 수 반영
         if (postLike.getLikeStatus()) {
-            postRepository.incrementPostLike(postId);
+            post.setTotalLike(post.getTotalLike() + 1);
         } else {
-            postRepository.decrementPostLike(postId);
+            post.setTotalLike(post.getTotalLike() - 1);
         }
 
+        // 변경 감지로 자동 update
         return new PostLikeResponse(postLike.getLikeStatus());
     }
+
 
     private PostLike toggleOrCreateLike(PostLikeId id) {
         return postLikeRepository.findById(id)

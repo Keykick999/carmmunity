@@ -72,7 +72,6 @@ public class ShoppingService {
     public String composeGlbPath(String userId) {
         List<String> imageCodes = shoppingCart.get(userId);
         if (imageCodes == null || imageCodes.isEmpty()) {
-            System.out.println("선택된 이미지 없음");
             throw new IllegalStateException("선택된 이미지가 없습니다.");
         }
 
@@ -80,7 +79,6 @@ public class ShoppingService {
         Path path = Paths.get("C:/uploads/3d", key + ".glb");
 
         if (!Files.exists(path)) {
-            System.out.println("해당 조합 3D 모델 존재 x");
             throw new IllegalStateException("해당 조합의 3D 모델이 존재하지 않습니다: " + path);
         }
 

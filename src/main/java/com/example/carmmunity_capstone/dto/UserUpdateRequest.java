@@ -12,6 +12,6 @@ public class UserUpdateRequest {
     private String nickname;
     private String phone;
 
-    private String introduction;       // ✅ 추가
+    private String introduction;
     private String profileImagePath;
 }

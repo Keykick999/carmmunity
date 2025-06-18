@@ -54,13 +54,13 @@ public class UserService {
                 "signup"
         );
 
-        // ✅ 약관 null 방어
+        // 약관 null 방어
         List<UserTermAgreementRequest> agreements = request.getAgreements();
         if (agreements == null || agreements.isEmpty()) {
             throw new IllegalArgumentException("약관 동의 정보가 없습니다.");
         }
 
-        // ✅ 필수 약관 체크 검증
+        // 필수 약관 체크 검증
         List<Term> requiredTerms = termRepository.findByIsRequiredTrue();
 
         Set<String> requiredCodes = requiredTerms.stream()
@@ -137,17 +137,14 @@ public class UserService {
         user.setNickname(request.getNickname());
         user.setPhone(request.getPhone());
 
-        // ✅ 추가된 필드 처리
         user.setIntroduction(request.getIntroduction());
         user.setProfileImagePath(request.getProfileImagePath());
 
         userRepository.save(user);
-
-
     }
 
     //회원 정보 수정 - 유저 업로드 이미지 기준
-    @Transactional // ✅ 트랜잭션 보장
+    @Transactional
     public void updateUserProfileWithImage(String userId, String nickname, String phone, String introduction,
                                            MultipartFile profileImage, String defaultImage) {
 
@@ -192,7 +189,7 @@ public class UserService {
                 imageFile.transferTo(dest);
 
 
-                // ✅ 4. DB에는 상대 경로로 저장
+                // DB에는 상대 경로로 저장
                 return "/uploads/" + storedFileName;
 
             } catch (IOException e) {
@@ -222,7 +219,7 @@ public class UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("해당하는 사용자가 없습니다."));
 
-        // ✅ 반드시 newPassword를 암호화해서 저장해야 함
+        // 반드시 newPassword를 암호화해서 저장해야 함
         user.setPassword(passwordEncoder.encode(newPassword));
 
         userRepository.save(user);
@@ -273,4 +270,3 @@ public class UserService {
     }
      */
 }
-

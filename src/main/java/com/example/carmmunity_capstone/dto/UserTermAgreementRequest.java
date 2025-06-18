@@ -11,6 +11,6 @@ import lombok.*;
 public class UserTermAgreementRequest {
     private String termCode;
 
-    @JsonProperty("isAgreed") // ✅ Jackson 매핑 보장
+    @JsonProperty("isAgreed") // Jackson 매핑 보장
     private boolean isAgreed;
 }

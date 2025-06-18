@@ -52,7 +52,7 @@ function loadPost() {
             </button>
         `;
 
-                // ✅ 작성자라면 수정/삭제 버튼 추가
+                // 작성자라면 수정/삭제 버튼 추가
                 const authorButtons = post.authorFlag
                     ? `
                 <div class="mt-2">
@@ -248,7 +248,6 @@ function loadReplies(parentCommentId, $replyList, replyPage = 0) {
                 `;
             }).join('');
 
-            // 🔥 이 부분만 남기세요
             if (repliesHtml.trim() !== '') {
                 let $section = $replyList.find('.reply-section');
                 if ($section.length === 0) {

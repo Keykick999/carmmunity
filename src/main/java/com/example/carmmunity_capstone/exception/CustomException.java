@@ -1,6 +1,5 @@
 package com.example.carmmunity_capstone.exception;
 
-import com.example.carmmunity_capstone.exception.ErrorCode;
 
 public class CustomException extends RuntimeException {
 

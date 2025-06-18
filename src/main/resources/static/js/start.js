@@ -21,7 +21,7 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
             throw new Error(error || "로그인 실패");
         }
 
-        const data = await response.json(); // 예: { token: "...", userId: "...", ... }
+        const data = await response.json();
         localStorage.setItem("token", data.token);
 
         alert("로그인 성공!");
