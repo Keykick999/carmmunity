@@ -22,7 +22,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         // User 엔티티가 UserDetails를 구현하거나, 별도 래퍼 클래스가 필요할 수 있음
         return org.springframework.security.core.userdetails.User.builder()
-                .username(user.getUserId())
+                .username(user.getUserUuid())
                 .password(user.getPassword())
                 .roles("USER")
                 .build();

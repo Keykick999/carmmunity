@@ -119,7 +119,7 @@ public class UserService {
 
     // 회원 정보 조회
     public UserResponse getUserInfo(String userId) {
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByUserUuid(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
         return new UserResponse(
@@ -243,7 +243,7 @@ public class UserService {
 
     public User getAuthenticatedUser() {
         String userId = getCurrentUserId();
-        return userRepository.findById(userId)
+        return userRepository.findByUserUuid(userId)
                 .orElseThrow(() -> new UnauthenticatedUserException("인증된 사용자가 아닙니다."));
     }
 
@@ -253,7 +253,7 @@ public class UserService {
     }
 
     public Optional<User> findById(String userId) {
-        return userRepository.findById(userId);
+        return userRepository.findByUserUuid(userId);
     }
 
 
