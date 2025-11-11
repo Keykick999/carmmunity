@@ -3,6 +3,7 @@ package com.example.carmmunity_capstone.service;
 import com.example.carmmunity_capstone.dto.UserSummaryDto;
 import com.example.carmmunity_capstone.entity.Friendship;
 import com.example.carmmunity_capstone.entity.FriendshipStatus;
+import com.example.carmmunity_capstone.entity.RelationshipStatus;
 import com.example.carmmunity_capstone.entity.User;
 import com.example.carmmunity_capstone.repository.FriendshipRepository;
 import com.example.carmmunity_capstone.repository.UserRepository;
@@ -172,13 +173,24 @@ public class FriendshipService {
      * 8. 전체 사용자 검색
      */
     @Transactional(readOnly = true)
-    public List<UserSummaryDto> searchUsers(String nickname) {
+    public List<UserSummaryDto> searchUsers(String currentUserUuid, String nickname) {
         if (nickname == null || nickname.isBlank()) {
             return List.of();
         }
-        return userRepository.findByNicknameContainingIgnoreCase(nickname)
+
+        // 1. 현재 로그인 사용자 엔티티 조회
+        User currentUser = findUserByUuid(currentUserUuid);
+
+        // 2. 닉네임으로 사용자 검색
+        return userRepository.findByNicknameContainingIgnoreCaseAndUserUuidNot(nickname, currentUserUuid)
                 .stream()
-                .map(UserSummaryDto::from)
+                .map(searchedUser -> {
+                    // 3. 현재 사용자와 검색된 사용자 간의 관계 상태 결정
+                    RelationshipStatus status = determineRelationshipStatus(currentUser, searchedUser);
+
+                    // 4. 관계 상태를 포함하여 DTO 생성
+                    return UserSummaryDto.from(searchedUser, status);
+                })
                 .collect(Collectors.toList());
     }
 
@@ -284,5 +296,39 @@ public class FriendshipService {
         if (friendshipRepository.findByRequesterAndReceiver(userB, userA).map(f -> f.getStatus() == FriendshipStatus.BLOCKED).orElse(false)) {
             throw new RuntimeException("상대방에 의해 차단된 상태입니다.");
         }
+    }
+
+    /**
+     * 현재 로그인된 사용자(requester)와 목록의 대상(receiver) 간의 관계 상태를 결정합니다.
+     * @param requester 현재 로그인된 사용자
+     * @param receiver 목록에 표시될 사용자
+     * @return RelationshipStatus
+     */
+    private RelationshipStatus determineRelationshipStatus(User requester, User receiver) {
+        // 1. 요청자가 자기 자신인 경우 (자기 목록을 볼 때)
+        if (requester.getUserUuid().equals(receiver.getUserUuid())) {
+            return RelationshipStatus.FOLLOWING; // 자기 자신은 팔로우 상태로 간주 (UI 처리용)
+        }
+
+        // 2. 차단 상태 확인 (양방향)
+        // requester가 receiver를 차단했거나, receiver가 requester를 차단했는지 확인
+        if (friendshipRepository.findByRequesterAndReceiver(requester, receiver)
+                .filter(f -> f.getStatus() == FriendshipStatus.BLOCKED).isPresent() ||
+                friendshipRepository.findByRequesterAndReceiver(receiver, requester)
+                        .filter(f -> f.getStatus() == FriendshipStatus.BLOCKED).isPresent()) {
+            return RelationshipStatus.BLOCKED;
+        }
+
+        // 3. 팔로우 상태 확인 (requester가 receiver를 팔로우하고 있는지)
+        return friendshipRepository.findByRequesterAndReceiver(requester, receiver)
+                .map(friendship -> {
+                    if (friendship.getStatus() == FriendshipStatus.FOLLOWING) {
+                        return RelationshipStatus.FOLLOWING;
+                    } else if (friendship.getStatus() == FriendshipStatus.PENDING) {
+                        return RelationshipStatus.REQUESTED;
+                    }
+                    return RelationshipStatus.NOT_FOLLOWING;
+                })
+                .orElse(RelationshipStatus.NOT_FOLLOWING);
     }
 }

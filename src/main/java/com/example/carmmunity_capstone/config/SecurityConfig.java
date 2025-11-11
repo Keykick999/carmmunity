@@ -23,14 +23,23 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
-                .csrf().disable()
-                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS) // 세션을 사용하지 않음
-                .and()
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/","/users", "/users/login", "/email/**", "/carTest", "/**" ,"edit-post").permitAll()
-                        .anyRequest().authenticated() // 그 외 모든 요청은 인증 필요
+                .csrf(csrf -> csrf.disable())
+
+                .sessionManagement(sessionManagement ->
+                        sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class) // JWT 필터를 UsernamePasswordAuthenticationFilter 앞에 추가
+
+                // 3. 요청 권한 설정 (기존 람다 유지)
+                .authorizeHttpRequests(auth -> auth
+                        // 인증 없이 허용할 엔드포인트 목록
+                        .requestMatchers("/", "/users", "/users/login", "/email/**", "/carTest", "/**", "/edit-post").permitAll()
+                        // 그 외 모든 요청은 인증 필요
+                        .anyRequest().authenticated()
+                )
+
+                // 4. 필터 추가 (Deprecation 없이 유지)
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+
                 .build();
     }
 

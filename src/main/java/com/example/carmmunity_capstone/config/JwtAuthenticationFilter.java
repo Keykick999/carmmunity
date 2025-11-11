@@ -49,17 +49,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     .orElse(null);
 
             if (user != null) {
+                // 1. UserDetails는 권한 정보만 담는 용도로 사용합니다.
+                // Principal 자리에 들어갈 UUID 문자열은 따로 준비합니다.
+                String uuidForPrincipal = user.getUserUuid();
 
-                // UserDetailsService는 로그인용이라 여기서 쓰면 안됨
                 UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
-                        .username(user.getUserUuid())   // JWT subject 기준 유지
+                        .username(user.getUserUuid()) // UserDetails 내부 username
                         .password(user.getPassword())
                         .roles("USER")
                         .build();
 
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
-                                userDetails,
+                                // 2. Principal 자리에 user.getUserUuid() (String)을 직접 넣습니다.
+                                uuidForPrincipal, // <--- 수정 포인트
                                 null,
                                 userDetails.getAuthorities()
                         );

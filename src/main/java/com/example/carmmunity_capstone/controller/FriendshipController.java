@@ -23,7 +23,6 @@ public class FriendshipController {
     public ResponseEntity<Void> followUser(
             @AuthenticationPrincipal String currentUserUuid, // A (Follower)
             @PathVariable String followeeUuid) { // B (Followee)
-
         friendshipService.followUser(currentUserUuid, followeeUuid);
         return ResponseEntity.ok().build();
     }
@@ -113,8 +112,9 @@ public class FriendshipController {
      */
     @GetMapping("/search")
     public ResponseEntity<List<UserSummaryDto>> searchUsers(
+            @AuthenticationPrincipal String currentUserUuid,
             @RequestParam("nickname") String nickname) {
-        return ResponseEntity.ok(friendshipService.searchUsers(nickname));
+        return ResponseEntity.ok(friendshipService.searchUsers(currentUserUuid, nickname));
     }
 
     /**
@@ -124,7 +124,6 @@ public class FriendshipController {
     public ResponseEntity<List<UserSummaryDto>> getFollowingList(
             @AuthenticationPrincipal String currentUserUuid, // (주체) 요청한 사람
             @PathVariable String targetUserUuid) { // (대상) 보려는 프로필
-
         return ResponseEntity.ok(friendshipService.getFollowingList(currentUserUuid, targetUserUuid));
     }
 
