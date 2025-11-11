@@ -19,19 +19,19 @@ public class UserCar {
 
     @MapsId("userId")
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "User_ID", nullable = false)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "Image_Path")
+    @Column(name = "image_path")
     private String imagePath; // 서버에 저장된 glTF 파일 경로
 
-    @Column(name = "Created_At", updatable = false)
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "Updated_At")
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Column(name = "Deleted_At")
+    @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
     @PrePersist

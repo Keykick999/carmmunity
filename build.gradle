@@ -46,6 +46,8 @@ dependencies {
 
 	//mail 연결
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
+
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'
 }
 
 tasks.named('test') {

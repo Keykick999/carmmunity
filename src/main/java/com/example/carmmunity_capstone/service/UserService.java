@@ -14,6 +14,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -105,8 +106,13 @@ public class UserService {
             throw new IllegalArgumentException("아이디 또는 비밀번호가 올바르지 않습니다.");
         }
 
-        // jwt token 발급
-        String token = jwtTokenProvider.createToken(request.getUserId());
+        // 로그인 성공 시, DB에서 User 정보를 조회
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new UsernameNotFoundException("사용자 정보를 찾을 수 없습니다.")); // (인증이 통과했으므로 이 오류는 거의 발생 안 함)
+
+        // 'userId' 대신 'userUuid'를 담아서 생성
+        String token = jwtTokenProvider.createToken(user.getUserUuid());
+
         return new UserLoginResponse(token);
     }
 

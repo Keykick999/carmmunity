@@ -15,10 +15,10 @@ import java.util.Objects;
 @Getter
 public class UserCarId implements Serializable {
 
-    @Column(name = "User_ID")
+    @Column(name = "user_id")
     private String userId;
 
-    @Column(name = "Car_ID")
+    @Column(name = "car_id")
     private Integer carId;
 
     @Override
