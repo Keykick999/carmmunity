@@ -37,6 +37,12 @@ document.addEventListener("DOMContentLoaded", () => {
     if (chatModalElement) {
         chatModalInstance = new bootstrap.Modal(chatModalElement);
 
+        // 모달이 완전히 열린 뒤 스크롤을 맨 아래로 이동
+        chatModalElement.addEventListener('shown.bs.modal', () => {
+            const chatContent = document.getElementById('chatContent');
+            chatContent.scrollTop = chatContent.scrollHeight;
+        });
+
         // 채팅 모달이 닫힐 때 WebSocket 연결 해제
         chatModalElement.addEventListener('hidden.bs.modal', () => {
             disconnectWebSocket();
@@ -756,7 +762,10 @@ async function loadAndConnectChat(roomId) {
             displayMessage(msgDto, false); // false: 실시간 아님 (읽음 처리 안 함)
         });
 
-        chatContent.scrollTop = chatContent.scrollHeight; // 스크롤 맨 아래로
+        // 렌더링이 완료된 후 스크롤을 맨 아래로 이동시키기 위해 setTimeout 사용
+        setTimeout(() => {
+            chatContent.scrollTop = chatContent.scrollHeight;
+        }, 0); // 0밀리초 지연 = 다음 이벤트 루프에서 실행
 
         // 2. WebSocket 연결
         connectWebSocket(roomId);
@@ -835,6 +844,12 @@ function handleSubscriptionMessage(payload) {
     if (receivedMessage.messageId && receivedMessage.content) {
         // 1. 새 메시지 (ChatMessageDto)
         displayMessage(receivedMessage, true); // true: 실시간 메시지
+
+        // 실시간 메시지 수신 시, 여기서 직접 스크롤을 호출합니다.
+        const chatContent = document.getElementById('chatContent');
+        setTimeout(() => {
+            chatContent.scrollTop = chatContent.scrollHeight;
+        }, 0); // 렌더링 후 스크롤
 
     } else if (receivedMessage.messageId && receivedMessage.unreadCount !== undefined) {
         // 2. 읽음 이벤트 (MessageReadEventDto)
@@ -950,8 +965,6 @@ function displayMessage(msgDto, isRealtime) {
     // 5. 채팅창에 추가
     chatContent.appendChild(bubble);
 
-    // 6. 스크롤 맨 아래로
-    chatContent.scrollTop = chatContent.scrollHeight;
 
     // 7. [중요] 실시간으로 받은 메시지(남의 메시지)면 즉시 읽음 처리
     if (!isMine && isRealtime) {

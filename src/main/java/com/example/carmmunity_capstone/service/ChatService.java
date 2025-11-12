@@ -1,16 +1,17 @@
 package com.example.carmmunity_capstone.service; // 경로는 알맞게 수정하세요
 
-import com.example.carmmunity_capstone.dto.ChatMessageDto;
-import com.example.carmmunity_capstone.dto.ChatRoomListDto;
-import com.example.carmmunity_capstone.dto.CreateChatRoomRequest;
-import com.example.carmmunity_capstone.dto.CreateChatRoomResponse;
+import com.example.carmmunity_capstone.dto.*;
 import com.example.carmmunity_capstone.entity.*;
 import com.example.carmmunity_capstone.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
 @Transactional
 public class ChatService {
 
+    private final SimpMessagingTemplate messagingTemplate;
     private final ChatRoomRepository chatRoomRepository;
     private final ChatParticipantRepository chatParticipantRepository;
     private final UserRepository userRepository; // User 조회를 위해 필요
@@ -168,36 +170,65 @@ public class ChatService {
 
     @Transactional
     public void readChatRoom(String currentUserUuid, Long roomId) {
-        User currentUser = findUserByUuid(currentUserUuid); // (findUserByUuid는 서비스 내에 구현되어 있다고 가정)
-        ChatRoom room = findRoomById(roomId);           // (findRoomById는 서비스 내에 구현되어 있다고 가정)
+        User currentUser = findUserByUuid(currentUserUuid);
+        ChatRoom room = findRoomById(roomId);
 
-        // 1. (권한 확인) 현재 참여자 정보 조회
+        // 1. (권한 확인)
         ChatParticipant participant = chatParticipantRepository.findByUserAndChatRoom(currentUser, room)
                 .orElseThrow(() -> new RuntimeException("채팅방에 참여한 사용자가 아닙니다."));
 
-        // 2. [수정] 이 유저가 이 방에서 '아직 안 읽은' 모든 메시지 조회 (커스텀 쿼리)
+        // 2. 안 읽은 메시지 조회
         List<ChatMessage> unreadMessages = chatMessageRepository.findUnreadMessagesByUserInRoom(room, currentUser);
 
         if (unreadMessages.isEmpty()) {
-            // 안 읽은 메시지가 없으면 책갈피만 업데이트하고 종료
             updateParticipantBookmark(participant, room);
             return;
         }
 
-        // 3. [수정] 안 읽은 메시지들을 '읽음' 상태(MessageReadStatus)로 일괄 생성
+        // 3. 🚩 [수정] saveAll을 하기 *전에* 방송할 이벤트 목록을 미리 생성
+        long totalParticipants = chatParticipantRepository.countByChatRoom(room);
         List<MessageReadStatus> newReadStatuses = new ArrayList<>();
+        List<MessageReadEventDto> readEventsToBroadcast = new ArrayList<>();
+
         for (ChatMessage message : unreadMessages) {
-            MessageReadStatus readStatus = MessageReadStatus.builder()
+
+            // [수정] (Query BEFORE Save) 현재 읽은 사람 수를 먼저 조회
+            long currentReadCount = messageReadStatusRepository.countByChatMessage(message);
+            long currentUnreadCount = totalParticipants - currentReadCount;
+
+            // [수정] 이 유저(currentUser)가 읽으면 1이 줄어듦
+            long newUnreadCount = currentUnreadCount - 1;
+
+            // (1) DB 저장 준비
+            newReadStatuses.add(MessageReadStatus.builder()
                     .chatMessage(message)
                     .user(currentUser)
-                    .build();
-            newReadStatuses.add(readStatus);
+                    .build());
+
+            // (2) 방송 이벤트 준비
+            readEventsToBroadcast.add(new MessageReadEventDto(
+                    message.getChatMessageId(),
+                    currentUser.getUserUuid(),
+                    (newUnreadCount < 0 ? 0 : newUnreadCount) // 음수 방지
+            ));
         }
 
-        // 4. [수정] DB에 일괄 저장 (Batch Insert)
+        // 4. DB에 일괄 저장 (Batch Insert)
         messageReadStatusRepository.saveAll(newReadStatuses);
 
-        // 5. [수정] 책갈피(lastReadMessageId) 업데이트 (기존 로직 수행)
+        // 5. 🚩 [수정] 트랜잭션 커밋 *이후*에 방송하도록 등록
+        // (handleSendMessage와 동일한 이유로, 트랜잭션 동기화 사용)
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                // 6. DB 커밋이 완료된 후, 준비된 이벤트를 모두 방송
+                for (MessageReadEventDto event : readEventsToBroadcast) {
+                    messagingTemplate.convertAndSend("/topic/room/" + room.getChatRoomId(), event);
+                }
+            }
+        });
+
+        // 7. 책갈피 업데이트
         updateParticipantBookmark(participant, room);
     }
 
