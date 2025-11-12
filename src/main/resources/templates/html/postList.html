@@ -252,6 +252,105 @@
             border-radius: 50%;
             object-fit: cover;
         }
+
+        #chatModal .modal-dialog {
+            /* 기본: 모바일/중앙 */
+            max-width: 100%;
+            height: 100vh;
+            margin: 0;
+        }
+        @media (min-width: 768px) {
+            /* 데스크톱: 드래그를 위해 position: fixed를 absolute로 변경 */
+            #chatModal .modal-dialog {
+                max-width: 380px;
+                height: 550px;
+                position: absolute; /* 드래그 가능하도록 변경 */
+                top: 30px; /* 초기 위치 설정 */
+                left: calc(100% - 410px); /* 초기 위치 설정 (우측에서 30px 떨어진 곳) */
+                margin: 0;
+                cursor: grab; /* 드래그 가능한 커서 */
+            }
+        }
+        #chatModal .modal-content {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+        }
+        #chatModal .modal-header {
+            /* 드래그 핸들러 */
+            cursor: grab;
+            border-bottom: 1px solid #eee;
+            user-select: none; /* 드래그 시 텍스트 선택 방지 */
+        }
+        #chatContent {
+            flex-grow: 1;
+            overflow-y: auto;
+            background-color: #f0f2f5;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .message-input-area {
+            padding: 10px 15px;
+            border-top: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            background-color: white;
+        }
+        .chat-bubble {
+            max-width: 85%;
+            padding: 10px 14px;
+            border-radius: 18px;
+            word-wrap: break-word;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            display: flex;
+            flex-direction: column; /* 메시지 + 안 읽음 카운트 */
+        }
+        .incoming {
+            background-color: #fff;
+            align-self: flex-start;
+            border: 1px solid #e5e5e5;
+            border-bottom-left-radius: 4px;
+        }
+        .outgoing {
+            background-color: #0d6efd;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+        /* 안 읽음 카운트 스타일 */
+        .unread-count {
+            font-size: 0.75rem;
+            color: #ffc107; /* 노란색 경고 */
+            align-self: flex-end;
+            margin-top: 2px;
+            margin-right: 5px;
+        }
+        .incoming .unread-count {
+            display: none; /* 받은 메시지에는 안 읽음 카운트 표시 안 함 */
+        }
+        /* 로딩 스피너 스타일 */
+        .chat-loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            gap: 10px;
+            color: #666;
+        }
+
+        #chatInput {
+            border-radius: 20px !important;
+            padding: 8px 15px;
+        }
+        #sendChatBtn {
+            border-radius: 20px !important;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -306,8 +405,12 @@
             </div>
             <div class="modal-body">
                 <ul class="nav nav-tabs" id="friendshipTabs" role="tablist">
+                    <!-- 🚩 [수정] 친구 목록 탭을 active로 설정 -->
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="search-tab" data-bs-toggle="tab" data-bs-target="#search-pane" type="button" role="tab" aria-controls="search-pane" aria-selected="true">🔍 사용자 검색</button>
+                        <button class="nav-link active" id="following-tab" data-bs-toggle="tab" data-bs-target="#following-pane" type="button" role="tab" aria-controls="following-pane" aria-selected="true">👥 친구 목록 (Following)</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="search-tab" data-bs-toggle="tab" data-bs-target="#search-pane" type="button" role="tab" aria-controls="search-pane" aria-selected="false">🔍 사용자 검색</button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="request-tab" data-bs-toggle="tab" data-bs-target="#request-pane" type="button" role="tab" aria-controls="request-pane" aria-selected="false">✉️ 받은 요청 <span class="badge bg-danger" id="requestCount">0</span></button>
@@ -315,7 +418,15 @@
                 </ul>
 
                 <div class="tab-content" id="friendshipTabContent">
-                    <div class="tab-pane fade show active p-3" id="search-pane" role="tabpanel" aria-labelledby="search-tab">
+                    <!-- 🚩 [수정] 친구 목록 탭 내용에 show active 클래스 추가 -->
+                    <div class="tab-pane fade show active p-3" id="following-pane" role="tabpanel" aria-labelledby="following-tab">
+                        <div id="followingList" class="list-group list-group-flush">
+                            <div class="text-muted text-center py-3">로딩 중...</div>
+                        </div>
+                    </div>
+
+                    <!-- 🚩 [수정] 사용자 검색 탭 내용에서 show active 클래스 제거 -->
+                    <div class="tab-pane fade p-3" id="search-pane" role="tabpanel" aria-labelledby="search-tab">
                         <div class="input-group mb-3">
                             <input type="text" class="form-control" placeholder="닉네임으로 검색하세요" id="nicknameSearchInput">
                             <button class="btn btn-outline-primary" type="button" id="searchNicknameBtn">검색</button>
@@ -336,8 +447,36 @@
     </div>
 </div>
 
+<!-- 채팅 모달 (Chat Modal) -->
+<div class="modal fade" id="chatModal" tabindex="-1" aria-labelledby="chatModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-end">
+        <div class="modal-content">
+            <!-- 헤더에 id 추가 -->
+            <div class="modal-header" id="chatModalHeader">
+                <h5 class="modal-title" id="chatModalLabel">채팅: <span id="chatTargetNickname">...</span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0 d-flex flex-column">
+                <!-- 임시 메시지 제거 -->
+                <div id="chatContent" class="flex-grow-1">
+                    <!-- 메시지 로드/연결 시 여기에 내용이 채워집니다. -->
+                </div>
+                <div class="message-input-area">
+                    <!-- 기본 disabled 처리 -->
+                    <input type="text" class="form-control me-2" placeholder="메시지를 입력하세요" id="chatInput" disabled>
+                    <button class="btn btn-primary" id="sendChatBtn" disabled>전송</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- SockJS (STOMP 의존성) -->
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.6.1/dist/sockjs.min.js"></script>
+<!-- STOMP (WebSocket 클라이언트) -->
+<script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
 
+<!-- 🚩 2. 부트스트랩 (기존 스크립트) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script type="module" src="/js/postlist.js"></script>
+<script type="module" src="/js/postList.js"></script>
 </body>
 </html>

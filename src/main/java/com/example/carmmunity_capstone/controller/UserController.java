@@ -37,8 +37,8 @@ public class UserController {
     // 회원 정보 조회
     @GetMapping("/info")
     public ResponseEntity<UserResponse> getMyInfo(@RequestHeader("Authorization") String token) {
-        String userId = jwtTokenProvider.getUserId(token.replace("Bearer ", ""));
-        return ResponseEntity.ok(userService.getUserInfo(userId));
+        String userUuId = jwtTokenProvider.getUserId(token.replace("Bearer ", ""));
+        return ResponseEntity.ok(userService.getUserInfo(userUuId));
     }
 
     // 회원 정보 수정 - 기본 이미지 이용 시

@@ -118,12 +118,12 @@ public class UserService {
 
 
     // 회원 정보 조회
-    public UserResponse getUserInfo(String userId) {
-        User user = userRepository.findByUserUuid(userId)
+    public UserResponse getUserInfo(String userUuid) {
+        User user = userRepository.findByUserUuid(userUuid)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
         return new UserResponse(
-                user.getUserId(),
+                user.getUserUuid(),
                 user.getNickname(),
                 user.getEmail(),
                 user.getPhone(),

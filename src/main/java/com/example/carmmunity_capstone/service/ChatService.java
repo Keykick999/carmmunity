@@ -166,22 +166,50 @@ public class ChatService {
         });
     }
 
-    /**
-     * 4. 채팅방 읽음 처리 (책갈피) (API ③)
-     */
+    @Transactional
     public void readChatRoom(String currentUserUuid, Long roomId) {
-        User currentUser = findUserByUuid(currentUserUuid);
-        ChatRoom room = findRoomById(roomId);
+        User currentUser = findUserByUuid(currentUserUuid); // (findUserByUuid는 서비스 내에 구현되어 있다고 가정)
+        ChatRoom room = findRoomById(roomId);           // (findRoomById는 서비스 내에 구현되어 있다고 가정)
 
-        // 1. 현재 참여자 정보 조회 (권한 확인 겸)
+        // 1. (권한 확인) 현재 참여자 정보 조회
         ChatParticipant participant = chatParticipantRepository.findByUserAndChatRoom(currentUser, room)
                 .orElseThrow(() -> new RuntimeException("채팅방에 참여한 사용자가 아닙니다."));
 
-        // 2. 방의 '가장 마지막' 메시지 ID 찾기
+        // 2. [수정] 이 유저가 이 방에서 '아직 안 읽은' 모든 메시지 조회 (커스텀 쿼리)
+        List<ChatMessage> unreadMessages = chatMessageRepository.findUnreadMessagesByUserInRoom(room, currentUser);
+
+        if (unreadMessages.isEmpty()) {
+            // 안 읽은 메시지가 없으면 책갈피만 업데이트하고 종료
+            updateParticipantBookmark(participant, room);
+            return;
+        }
+
+        // 3. [수정] 안 읽은 메시지들을 '읽음' 상태(MessageReadStatus)로 일괄 생성
+        List<MessageReadStatus> newReadStatuses = new ArrayList<>();
+        for (ChatMessage message : unreadMessages) {
+            MessageReadStatus readStatus = MessageReadStatus.builder()
+                    .chatMessage(message)
+                    .user(currentUser)
+                    .build();
+            newReadStatuses.add(readStatus);
+        }
+
+        // 4. [수정] DB에 일괄 저장 (Batch Insert)
+        messageReadStatusRepository.saveAll(newReadStatuses);
+
+        // 5. [수정] 책갈피(lastReadMessageId) 업데이트 (기존 로직 수행)
+        updateParticipantBookmark(participant, room);
+    }
+
+    /**
+     * 책갈피 업데이트 로직 (중복 제거용)
+     */
+    private void updateParticipantBookmark(ChatParticipant participant, ChatRoom room) {
+        // 방의 '가장 마지막' 메시지 ID 찾기
         Optional<ChatMessage> lastMessage = chatMessageRepository.findTopByChatRoomOrderByCreatedAtDesc(room);
 
         if (lastMessage.isPresent()) {
-            // 3. '책갈피(lastReadMessageId)'를 마지막 메시지 ID로 업데이트
+            // '책갈피(lastReadMessageId)'를 마지막 메시지 ID로 업데이트
             participant.setLastReadMessageId(lastMessage.get().getChatMessageId());
             chatParticipantRepository.save(participant);
         }

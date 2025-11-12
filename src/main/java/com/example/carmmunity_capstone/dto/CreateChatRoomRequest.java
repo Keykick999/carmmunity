@@ -1,11 +1,14 @@
-package com.example.carmmunity_capstone.dto; // 경로는 알맞게 수정하세요
+package com.example.carmmunity_capstone.dto;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
+
 import java.util.List;
 
 @Getter
 @NoArgsConstructor
+@ToString
 public class CreateChatRoomRequest {
 
     /**

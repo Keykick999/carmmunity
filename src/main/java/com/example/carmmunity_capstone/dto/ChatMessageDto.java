@@ -1,33 +1,36 @@
 package com.example.carmmunity_capstone.dto;
 
 import com.example.carmmunity_capstone.entity.ChatMessage;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 @Getter
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class ChatMessageDto {
     private Long messageId;
+    private Long roomId;
     private String senderUuid;
     private String senderNickname;
-    private String senderProfileImage;
+    private String senderProfilePath;
     private String content;
-    private LocalDateTime sentAt;
-    private long unreadCount; // (핵심) 안 읽은 사람 수 (카톡 숫자)
+    private LocalDateTime sendTime;
+    private long unreadCount; // 안 읽은 사람 수
 
-    /**
-     * Entity를 DTO로 변환하는 정적 팩토리 메서드
-     */
-    public static ChatMessageDto from(ChatMessage message, long unreadCount) {
+    public static ChatMessageDto from(ChatMessage chatMessage, long unreadCount) {
         return ChatMessageDto.builder()
-                .messageId(message.getChatMessageId())
-                .senderUuid(message.getSender().getUserUuid())
-                .senderNickname(message.getSender().getNickname())
-                .senderProfileImage(message.getSender().getProfileImagePath())
-                .content(message.getContent())
-                .sentAt(message.getCreatedAt())
+                .messageId(chatMessage.getChatMessageId())
+                .roomId(chatMessage.getChatRoom().getChatRoomId())
+                .senderUuid(chatMessage.getSender().getUserUuid())
+                .senderNickname(chatMessage.getSender().getNickname())
+                .senderProfilePath(chatMessage.getSender().getProfileImagePath())
+                .content(chatMessage.getContent())
+                .sendTime(chatMessage.getCreatedAt())
                 .unreadCount(unreadCount)
                 .build();
     }

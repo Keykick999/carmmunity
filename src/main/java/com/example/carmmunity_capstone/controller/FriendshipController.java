@@ -118,6 +118,15 @@ public class FriendshipController {
     }
 
     /**
+     * 9-1. 현재 로그인된 유저의 팔로잉 목록 조회 (토큰 기반)
+     */
+    @GetMapping("/following")
+    public ResponseEntity<List<UserSummaryDto>> getMyFollowingList(
+            @AuthenticationPrincipal String currentUserUuid) { // 현재 로그인한 사용자 UUID
+        return ResponseEntity.ok(friendshipService.getFollowingList(currentUserUuid, currentUserUuid));
+    }
+
+    /**
      * 9. 팔로잉 목록 조회 (특정 유저의)
      */
     @GetMapping("/{targetUserUuid}/following")
@@ -146,6 +155,7 @@ public class FriendshipController {
             @AuthenticationPrincipal String currentUserUuid) {
         return ResponseEntity.ok(friendshipService.getReceivedFollowRequests(currentUserUuid));
     }
+
 
     // --- 예외 처리 ---
     @ExceptionHandler(RuntimeException.class)

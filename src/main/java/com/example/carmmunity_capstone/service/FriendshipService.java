@@ -245,6 +245,8 @@ public class FriendshipService {
         List<Friendship> relationships = friendshipRepository.findByReceiverAndStatus(
                 currentUser, FriendshipStatus.PENDING
         );
+
+
         return relationships.stream()
                 .map(Friendship::getRequester)
                 .map(UserSummaryDto::from)

@@ -25,8 +25,11 @@ public class ChatController {
     public ResponseEntity<CreateChatRoomResponse> createChatRoom(
             @AuthenticationPrincipal String currentUserUuid, // 현재 로그인한 유저 UUID
             @RequestBody CreateChatRoomRequest request) {
+        System.out.println("request = " + request);
+        System.out.println("currentUserUuid = " + currentUserUuid);
 
         CreateChatRoomResponse response = chatService.createChatRoom(currentUserUuid, request);
+        System.out.println("response = " + response);
         return ResponseEntity.ok(response);
     }
 
