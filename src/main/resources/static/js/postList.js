@@ -8,7 +8,8 @@ const BASE_URL = '/api/users';
 
 // 채팅 관련 전역 변수
 let myUserUuid = null; // 현재 로그인한 사용자 UUID
-let stompClient = null; // Stomp WebSocket 클라이언트
+let globalStompClient = null; // [수정] 전역 Stomp WebSocket 클라이언트 (페이지 로드 시 연결)
+let notificationCount = 0; // [신규] 알림 카운트
 let currentChatRoomId = null; // 현재 열려있는 채팅방 ID
 let currentChatTargetUuid = null; // 현재 대화 상대 UUID
 let currentChatSubscription = null; // 현재 채팅방 구독
@@ -22,6 +23,11 @@ const observerTarget = document.getElementById('observerTarget');
 let receivedRequestsData = null;
 let followingListData = null;
 
+let receivedNotifications = []; // (DB에서 불러온 알림을 저장할 배열로 용도 변경)
+let unreadMessageCounts = {}; // 친구별 안 읽음 카운트 저장 (예: {"친구UUID": 2})
+
+// (DB에서 가져온 '팔로우 수락' 등 기타 알림의 안 읽은 개수)
+let unreadInfoCount = 0;
 let chatModalInstance = null;
 
 // 프로필 이미지 설정 (초기 실행)
@@ -32,6 +38,19 @@ document.addEventListener("DOMContentLoaded", () => {
     const searchResultList = document.getElementById('searchResultList');
     const requestTab = document.getElementById('request-tab');
     const followingTab = document.getElementById('following-tab');
+    const notificationTab = document.getElementById('notification-tab');
+
+    const friendshipModal = document.getElementById('friendshipModal');
+    if (friendshipModal) {
+        // 모달이 '보여지기 시작할 때' (맨 처음 1회만)
+        friendshipModal.addEventListener('show.bs.modal', () => {
+            // "친구 목록" 탭이 활성화 상태인지 확인
+            if (followingTab.classList.contains('active')) {
+                // (데이터가 없으면) API를 호출하여 친구 목록을 로드
+                loadFollowingList();
+            }
+        });
+    }
 
     const chatModalElement = document.getElementById('chatModal');
     if (chatModalElement) {
@@ -45,7 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // 채팅 모달이 닫힐 때 WebSocket 연결 해제
         chatModalElement.addEventListener('hidden.bs.modal', () => {
-            disconnectWebSocket();
+            unsubscribeFromChatRoom();
         });
     }
 
@@ -57,6 +76,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 초기 요청 목록 로드
     loadInitialRequests();
+
+    // 기타 알림 카운트 로드 (DB 조회)
+    loadUnreadInfoCount();
 
     fetch("/users/info", {
         headers: {
@@ -73,6 +95,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (user.profileImagePath) {
                 img.src = user.profileImagePath;
             }
+            connectGlobalWebSocket(token);
         })
         .catch(err => console.error("❌ 프로필 이미지 로딩 실패:", err));
 
@@ -92,8 +115,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // 친구 목록 탭 클릭 시 목록 로드
     followingTab.addEventListener('shown.bs.tab', loadFollowingList);
 
-    loadFollowingList();
-
     const sendChatBtn = document.getElementById('sendChatBtn');
     const chatInput = document.getElementById('chatInput');
 
@@ -102,6 +123,35 @@ document.addEventListener("DOMContentLoaded", () => {
         if (e.key === 'Enter') {
             e.preventDefault();
             sendChatMessage();
+        }
+    });
+
+    // 알림 탭 클릭 시 이벤트
+    notificationTab.addEventListener('shown.bs.tab', async () => {
+        const listElement = document.getElementById('notificationList');
+        listElement.innerHTML = '<div class="text-center py-3">알림 목록 로드 중...</div>';
+
+        try {
+            // 1. [신규] DB에서 알림 목록 API 호출 (페이징 0번째)
+            const notificationSlice = await apiCall(`${BASE_URL.replace('/users', '/notifications')}?page=0&size=15`);
+
+            // 2. 전역 배열을 DB 데이터로 덮어쓰기
+            receivedNotifications = notificationSlice.content || [];
+
+            // 3. 렌더링
+            renderNotificationList(); // (다음 단계에서 이 함수도 수정)
+
+            // 4. [신규] "모두 읽음" API 호출 (서버 DB 업데이트)
+            await apiCall(`${BASE_URL.replace('/users', '/notifications')}/read-all`, 'POST');
+
+            // 5. [신규] (C) 기타 알림 카운트를 0으로 리셋
+            unreadInfoCount = 0;
+
+            // 6. [신규] 배지 총합을 다시 계산 (A+B+C)
+            updateNotificationBadge();
+
+        } catch (e) {
+            listElement.innerHTML = '<div class="text-danger text-center py-3">알림 로드에 실패했습니다.</div>';
         }
     });
 });
@@ -114,6 +164,212 @@ searchInput.addEventListener('keydown', (e) => {
     }
 });
 
+
+/**
+ * [신규] 페이지 로드 시 1회 실행, 전역 웹소켓 연결
+ * - 알림 토픽 구독
+ */
+function connectGlobalWebSocket(token) {
+    // 이미 연결되었거나, UUID가 없으면 실행 중단
+    if (globalStompClient || !myUserUuid) return;
+
+    console.log('⏳ [Global] STOMP 연결 시도...');
+
+    // 1. StompJs.Client 인스턴스 생성
+    globalStompClient = new window.StompJs.Client({
+        webSocketFactory: () => new window.SockJS('/ws-stomp'), // SockJS 사용
+        connectHeaders: {
+            'Authorization': `Bearer ${token}`
+        },
+        debug: () => {}, // 디버그 로그 비활성화
+        reconnectDelay: 5000, // [권장] 5초마다 자동 재연결 시도
+
+        // 2. 연결 성공 시 콜백
+        onConnect: (frame) => {
+            console.log('✅ [Global] STOMP 연결 성공:', frame);
+
+            // 3. [핵심] 알림 토픽 구독 (/topic/notifications/{myUserUuid})
+            globalStompClient.subscribe(`/topic/notifications/${myUserUuid}`, handleNotification);
+        },
+
+        // 4. 에러 발생 시 콜백
+        onStompError: (frame) => {
+            console.error('❌ [Global] STOMP 에러:', frame);
+        }
+    });
+
+    // 5. Stomp 연결 활성화
+    globalStompClient.activate();
+}
+
+/**
+ * [신규] 알림 토픽 메시지 수신 핸들러
+ */
+/**
+ * [수정] 알림 토픽 메시지 수신 핸들러
+ */
+function handleNotification(payload) {
+    try {
+        const notification = JSON.parse(payload.body);
+        console.log('🔔 새 알림 수신!', notification);
+
+
+        // 2. 알림 유형에 따라 '소스 (A)' 또는 '소스 (B)'를 업데이트
+        switch(notification.type) {
+            case 'NEW_FOLLOWER':
+            case 'FOLLOW_ACCEPTED':
+                // 기타 알림 카운트를 1 증가
+                unreadInfoCount++;
+                break;
+            case 'FOLLOW_REQUEST':
+                // (소스 A가 변경될 것이므로 loadInitialRequests 호출)
+                loadInitialRequests(); // 이 함수가 마지막에 updateNotificationBadge()를 호출함
+                return; // loadInitialRequests가 배지를 업데이트하므로 여기서 종료
+            case 'NEW_MESSAGE':
+                if (notification.roomId === currentChatRoomId) {
+                    return; // 채팅방이 열려있으면 무시
+                }
+
+                // (소스 B 업데이트)
+                const senderUuid = notification.senderUserUuid;
+                if (!unreadMessageCounts[senderUuid]) {
+                    unreadMessageCounts[senderUuid] = 0;
+                }
+                unreadMessageCounts[senderUuid]++;
+                updateFriendMessageBadge(senderUuid, unreadMessageCounts[senderUuid]);
+                break;
+        }
+
+        // 3. [수정] 모든 소스 변경이 끝난 후, 배지 총합을 다시 계산
+        updateNotificationBadge(); // 인자 없이 호출
+
+    } catch (e) {
+        console.error("알림 메시지 파싱 실패", e);
+    }
+}
+
+/**
+ * [신규] (C) 기타 알림 (메시지, 팔로우 요청 제외)의 안 읽은 개수를 DB에서 조회
+ */
+async function loadUnreadInfoCount() {
+    try {
+        // 1. [신규] API 호출
+        const count = await apiCall(`${BASE_URL.replace('/users', '/notifications')}/unread-count`);
+
+        // 2. 전역 변수에 저장
+        unreadInfoCount = count || 0;
+
+        // 3. 배지 총합계 업데이트
+        updateNotificationBadge();
+
+    } catch (e) {
+        console.error("❌ 안 읽은 '기타 알림' 개수 로드 실패:", e);
+        // (실패해도 헤더 배지는 0으로 렌더링됨)
+    }
+}
+
+/**
+ * [신규] 친구 목록의 '메시지' 버튼 배지 UI를 업데이트하는 함수
+ * @param {string} friendUuid 친구의 UUID
+ * @param {number} count 표시할 숫자
+ */
+function updateFriendMessageBadge(friendUuid, count) {
+    const badge = document.getElementById(`messageBadge-${friendUuid}`);
+
+    // 친구 목록 탭이 아직 열리지 않아 DOM에 요소가 없으면 그냥 종료
+    if (!badge) return;
+
+    if (count > 0) {
+        badge.textContent = count;
+        badge.classList.remove('d-none');
+    } else {
+        badge.textContent = '0';
+        badge.classList.add('d-none');
+    }
+}
+
+/**
+ * 알림 배지 카운트 업데이트 (헤더 + 모달 동시)
+ * @param {number} count 변경할 숫자
+ * @param {boolean} isIncrement true면 기존 값에 더하고, false면 덮어쓰기
+ */
+/**
+ * [수정] 모든 알림 소스를 다시 계산하여 헤더/모달 배지를 업데이트합니다.
+ * (이 함수는 더 이상 'notificationCount'를 직접 수정하지 않고,
+ * 'notificationCount' 변수 자체를 사용하지 않도록 리팩토링할 수도 있습니다.
+ * 하지만 일단은 'notificationCount'를 '총합' 변수로 사용합니다.)
+ */
+/**
+ * [수정] 모든 알림 소스를 다시 계산하여 헤더/모달 배지를 업데이트합니다.
+ * (헤더 배지와 알림 탭 배지를 분리)
+ */
+function updateNotificationBadge() {
+    // 1. 소스 (A): "받은 요청" 수
+    const followRequestCount = receivedRequestsData ? receivedRequestsData.length : 0;
+
+    // 2. 소스 (B): "총 안 읽은 메시지" 수
+    let totalUnreadMessages = 0;
+    for (const uuid in unreadMessageCounts) {
+        totalUnreadMessages += unreadMessageCounts[uuid];
+    }
+
+    // 3. 소스 (C): "기타 알림" (팔로우 수락, 새 팔로워)
+    const infoAlertCount = unreadInfoCount;
+
+    // 4. 총합 계산 (헤더 배지용)
+    notificationCount = followRequestCount + infoAlertCount;
+
+    // --- UI 업데이트 ---
+    const headerBadge = document.getElementById('notificationBadge');
+    const modalBadge = document.getElementById('notificationModalBadge');
+
+    // 5. [수정] 헤더 배지 업데이트 (총합 A+B+C)
+    const totalCountText = notificationCount.toString();
+    const showTotal = notificationCount > 0;
+    if (headerBadge) {
+        headerBadge.textContent = totalCountText;
+        showTotal ? headerBadge.classList.remove('d-none') : headerBadge.classList.add('d-none');
+    }
+
+    // 6. [수정] "알림" 탭 배지 업데이트 (C만)
+    const infoCountText = infoAlertCount.toString();
+    const showInfo = infoAlertCount > 0;
+    if (modalBadge) {
+        modalBadge.textContent = infoCountText;
+        showInfo ? modalBadge.classList.remove('d-none') : modalBadge.classList.add('d-none');
+    }
+}
+
+/**
+ * [신규] '알림' 탭을 렌더링하는 함수
+ */
+function renderNotificationList() {
+    const listElement = document.getElementById('notificationList');
+
+    if (receivedNotifications.length === 0) {
+        listElement.innerHTML = '<div class="text-muted text-center py-3">표시할 알림이 없습니다.</div>';
+        return;
+    }
+
+    // 배열의 내용을 HTML로 변환
+    listElement.innerHTML = receivedNotifications.map(notification => {
+        // 알림 유형에 따라 아이콘 변경 (예시)
+        let icon = '🔔';
+        if (notification.type === 'NEW_FOLLOWER') icon = '❤️';
+        if (notification.type === 'FOLLOW_REQUEST') icon = '✉️';
+        if (notification.type === 'FOLLOW_ACCEPTED') icon = '🤝';
+
+        return `
+            <div class="list-group-item d-flex align-items-center">
+                <span style="font-size: 1.2rem; margin-right: 12px;">${icon}</span>
+                <div style="line-height: 1.3;">
+                    <span class="fw-bold">${notification.senderNickname}</span>
+                    <small class="text-muted d-block">${notification.message}</small>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
 
 function handleSearch() {
     page = 0;
@@ -270,6 +526,14 @@ async function loadFollowingList() {
 
         followingListData = users || [];
 
+        unreadMessageCounts = {}; // 초기화
+        users.forEach(user => {
+            if (user.unreadMessageCount > 0) {
+                // (서버에서 가져온 초기 안 읽음 카운트 설정)
+                unreadMessageCounts[user.userUuid] = user.unreadMessageCount;
+            }
+        });
+
         renderFollowingList();
 
     } catch (e) {
@@ -300,6 +564,9 @@ function renderFollowingList() {
         document.getElementById(`messageBtn-${user.userUuid}`).addEventListener('click', () => {
             openChatModal(user.nickname, user.userUuid);
         });
+        if (unreadMessageCounts[user.userUuid] > 0) {
+            updateFriendMessageBadge(user.userUuid, unreadMessageCounts[user.userUuid]);
+        }
     });
 }
 
@@ -341,8 +608,10 @@ async function loadInitialRequests() {
         const users = await apiCall(`${BASE_URL}/requests/received`);
         receivedRequestsData = users || [];
 
-        requestCount.textContent = receivedRequestsData.length.toString();
+        const count = receivedRequestsData.length;
+        document.getElementById('requestCount').textContent = count.toString();
 
+        updateNotificationBadge();
     } catch (e) {
         console.error('❌ 초기 요청 목록 로드 실패:', e);
         requestCount.textContent = 'Err';
@@ -470,6 +739,8 @@ async function acceptFollowRequest(requesterUuid) {
         document.getElementById(`requestCount`).textContent = receivedRequestsData.length.toString();
         renderReceivedFollowRequests();
 
+        // 전역 알림 배지 카운트도 1 감소
+        updateNotificationBadge();
     } catch (e) {
         // 오류 처리
     }
@@ -493,6 +764,9 @@ async function declineFollowRequest(requesterUuid) {
         // UI를 다시 렌더링하고 카운트 업데이트
         document.getElementById(`requestCount`).textContent = receivedRequestsData.length.toString();
         renderReceivedFollowRequests();
+
+        // 전역 알림 배지 카운트도 1 감소
+        updateNotificationBadge();
     } catch (e) {
         // 오류 처리
     }
@@ -568,15 +842,21 @@ function renderFollowingItem(user) {
                 <span>${user.nickname}</span>
             </div>
             <div>
-                <!-- 메시지 버튼 -->
+                <!-- [수정] 1. 버튼에 position-relative 추가 -->
                 <button 
-                    class="btn btn-sm btn-info text-white me-2" 
+                    class="btn btn-sm btn-info text-white me-2 position-relative" 
                     id="messageBtn-${user.userUuid}"
                     data-uuid="${user.userUuid}"
                 >
                     메시지
+                    <!-- [수정] 2. 안 읽음 카운트 배지 span 추가 -->
+                    <span id="messageBadge-${user.userUuid}"
+                          class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none"
+                          style="font-size: 0.7em; padding: 4px 6px;">
+                        0
+                    </span>
                 </button>
-                <!-- 언팔로우 버튼 -->
+                <!-- 언팔로우 버튼 (기존과 동일) -->
                 <button 
                     class="btn btn-sm btn-danger" 
                     id="unfollowBtn-${user.userUuid}"
@@ -674,6 +954,14 @@ function dragElement(dialogElement, headerElement) {
 }
 
 async function openChatModal(nickname, targetUserUuid) {
+    // (모달을 열기 전에 카운트를 0으로 만듦)
+    if (unreadMessageCounts[targetUserUuid] > 0) {
+        unreadMessageCounts[targetUserUuid] = 0;
+        updateFriendMessageBadge(targetUserUuid, 0);
+
+        updateNotificationBadge();
+    }
+
     if (chatModalInstance) {
         // 1. 모달 UI 준비 (로딩 스피너)
         document.getElementById('chatTargetNickname').textContent = nickname;
@@ -768,7 +1056,7 @@ async function loadAndConnectChat(roomId) {
         }, 0); // 0밀리초 지연 = 다음 이벤트 루프에서 실행
 
         // 2. WebSocket 연결
-        connectWebSocket(roomId);
+        subscribeToChatRoom(roomId);
 
         // 3. [API 3] 채팅방 읽음 처리 (POST /api/chats/{roomId}/read)
         // (채팅방에 입장했음을 서버에 알림)
@@ -786,54 +1074,22 @@ async function loadAndConnectChat(roomId) {
 /**
  * [WebSocket] Stomp 클라이언트 연결 (최신 라이브러리 방식)
  */
-function connectWebSocket(roomId) {
-    // 0. 이전 연결이 있다면 종료
-    if (stompClient) {
-        disconnectWebSocket();
+function subscribeToChatRoom(roomId) {
+    if (!globalStompClient || !globalStompClient.active) {
+        console.error("STOMP 클라이언트가 연결되지 않았습니다.");
+        return;
     }
-
-    // 1. 인증 토큰 준비
-    const token = localStorage.getItem('token');
-
-    // 2. StompJs.Client 인스턴스 생성
-    // 🚩 [수정] Stomp.over() 대신 new StompJs.Client() 사용
-    stompClient = new window.StompJs.Client({
-
-        // 🚩 [수정] SockJS를 webSocketFactory를 통해 주입
-        webSocketFactory: () => {
-            // 🚩 [수정] Config와 일치하는 '/ws-stomp' 경로 및 window.SockJS 사용
-            return new window.SockJS('/ws-stomp');
-        },
-
-        // 🚩 [수정] 연결 헤더 설정
-        connectHeaders: {
-            'Authorization': `Bearer ${token}`
-        },
-
-        // (디버깅 로그 비활성화)
-        debug: () => {},
-
-        // 🚩 [수정] 연결 성공 시 콜백
-        onConnect: (frame) => {
-            console.log('✅ STOMP 연결 성공:', frame);
-
-            // 4. 특정 채팅방 구독 (/topic/room/{roomId})
-            currentChatSubscription = stompClient.subscribe(`/topic/room/${roomId}`, (payload) => {
-                // 구독 메시지 수신
-                handleSubscriptionMessage(payload);
-            });
-        },
-
-        // 🚩 [수정] 에러 발생 시 콜백
-        onStompError: (frame) => {
-            console.error('❌ STOMP 에러:', frame);
-            document.getElementById('chatContent').innerHTML += `<div class="text-danger text-center p-1">실시간 연결에 실패했습니다.</div>`;
-        }
+    if (currentChatSubscription) { // 중복 구독 방지
+        currentChatSubscription.unsubscribe();
+    }
+    // [수정] 전역 클라이언트를 사용하여 '구독'만 실행
+    currentChatSubscription = globalStompClient.subscribe(`/topic/room/${roomId}`, (payload) => {
+        handleSubscriptionMessage(payload);
     });
-
-    // 3. Stomp 연결 활성화
-    stompClient.activate();
+    console.log(`✅ [Chat] STOMP 채팅방 구독: /topic/room/${roomId}`);
 }
+
+
 /**
  * [WebSocket] 구독 메시지 처리 (새 메시지 OR 읽음 이벤트)
  */
@@ -864,7 +1120,7 @@ function sendChatMessage() {
     const chatInput = document.getElementById('chatInput');
     const content = chatInput.value.trim();
 
-    if (content && stompClient && stompClient.active && currentChatRoomId) {
+    if (content && globalStompClient && globalStompClient.active && currentChatRoomId) {
         // 1. DTO 생성 (WebSocketMessageDto)
         const wsMessage = {
             roomId: currentChatRoomId,
@@ -872,7 +1128,7 @@ function sendChatMessage() {
         };
 
         // 🚩 [수정] .send() -> .publish()
-        stompClient.publish({
+        globalStompClient.publish({
             destination: "/app/chat.sendMessage",
             body: JSON.stringify(wsMessage)
             // (헤더는 connect 시 설정됨)
@@ -886,14 +1142,13 @@ function sendChatMessage() {
  * [WebSocket] 읽음 확인 메시지 전송 (Read) (최신 라이브러리 방식)
  */
 function sendReadReceipt(messageId) {
-    if (messageId && stompClient && stompClient.active) {
+    if (messageId && globalStompClient && globalStompClient.active) {
         // 1. DTO 생성 (WebSocketReadMessageDto)
         const wsReadMessage = {
             messageId: messageId
         };
 
-        // 🚩 [수정] .send() -> .publish()
-        stompClient.publish({
+        globalStompClient.publish({
             destination: "/app/chat.readMessage",
             body: JSON.stringify(wsReadMessage)
         });
@@ -903,26 +1158,27 @@ function sendReadReceipt(messageId) {
 /**
  * [WebSocket] 연결 종료 (최신 라이브러리 방식)
  */
-function disconnectWebSocket() {
-    // 1. 구독 해제
+/**
+ * [WebSocket] 채팅방 구독 해지 (모달이 닫힐 때)
+ */
+function unsubscribeFromChatRoom() {
+    // 1. 채팅방 구독 해지
     if (currentChatSubscription) {
         currentChatSubscription.unsubscribe();
         currentChatSubscription = null;
+        console.log('⚪ [Chat] STOMP 채팅방 구독 해제됨');
     }
-    // 2. 연결 종료 (deactivate 사용)
-    if (stompClient) {
-        // 🚩 [수정] .disconnect() -> .deactivate()
-        stompClient.deactivate(() => {
-            console.log('⚪ STOMP 연결 해제됨');
-        });
-        stompClient = null;
-    }
-    // 3. 상태 초기화
+    // (전역 연결은 절대 끊지 않음)
+
+    // 2. [추가] 현재 채팅 상태 변수 초기화 (중요)
     currentChatRoomId = null;
     currentChatTargetUuid = null;
-    // 입력창 비활성화
-    document.getElementById('chatInput').disabled = true;
-    document.getElementById('sendChatBtn').disabled = true;
+
+    // 3. [추가] 입력창 비활성화
+    const chatInput = document.getElementById('chatInput');
+    const sendChatBtn = document.getElementById('sendChatBtn');
+    if(chatInput) chatInput.disabled = true;
+    if(sendChatBtn) sendChatBtn.disabled = true;
 }
 
 // --- 4. 채팅 UI 헬퍼 함수 ---

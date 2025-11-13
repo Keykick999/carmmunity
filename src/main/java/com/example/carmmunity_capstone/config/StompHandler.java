@@ -16,7 +16,7 @@ import java.util.Collections;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class StompHandler implements ChannelInterceptor {
+public class StompHandler implements ChannelInterceptor {   // websocket에서 데이터를 주고 받을 때 인증된 사용자 정보 확인하기 위해 사용
 
     private final JwtTokenProvider jwtTokenProvider; // 제공해주신 JwtTokenProvider
 
@@ -38,7 +38,7 @@ public class StompHandler implements ChannelInterceptor {
                     System.out.println("userUuid in config file = " + userUuid);
                     Authentication authentication = new UsernamePasswordAuthenticationToken(userUuid, null, Collections.emptyList());
 
-                    // 🚩 [수정 포인트 1] 세션 속성(Session Attributes)에 인증 정보 저장
+                    // 세션 속성(Session Attributes)에 인증 정보 저장
                     accessor.getSessionAttributes().put("userAuthentication", authentication);
 
                     // (setUser는 현재 CONNECT 메시지에만 적용되므로 세션 저장이 더 중요)
@@ -53,17 +53,17 @@ public class StompHandler implements ChannelInterceptor {
             }
         }
 
-        // 2. 🚩 [수정 포인트 2] STOMP SEND (메시지 전송) 또는 SUBSCRIBE (구독) 시:
+        // STOMP SEND (메시지 전송) 또는 SUBSCRIBE (구독) 시:
         //    - 세션 속성에 저장된 Authentication 객체를 가져옴
         //    - [중요] 가져온 객체를 *현재 메시지의 헤더(accessor)*에 설정
         else if (StompCommand.SEND.equals(accessor.getCommand()) || StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
 
-            // 🚩 세션에서 저장해뒀던 인증 정보 검색
+            // 세션에서 저장해뒀던 인증 정보 검색
             Authentication authentication = (Authentication) accessor.getSessionAttributes().get("userAuthentication");
             System.out.println("authentication = " + authentication);
 
             if (authentication != null) {
-                // 🚩 현재 메시지의 accessor에 User 설정
+                // 현재 메시지의 accessor에 User 설정
                 // 이 작업이 있어야 @MessageMapping의 @AuthenticationPrincipal이 Principal을 찾을 수 있음
                 accessor.setUser(authentication);
             } else {

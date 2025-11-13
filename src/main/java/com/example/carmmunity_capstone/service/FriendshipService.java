@@ -1,32 +1,39 @@
 package com.example.carmmunity_capstone.service;
 
+import com.example.carmmunity_capstone.dto.FollowEvent;
+import com.example.carmmunity_capstone.dto.NotificationDto; // DTO 임포트
 import com.example.carmmunity_capstone.dto.UserSummaryDto;
-import com.example.carmmunity_capstone.entity.Friendship;
-import com.example.carmmunity_capstone.entity.FriendshipStatus;
-import com.example.carmmunity_capstone.entity.RelationshipStatus;
-import com.example.carmmunity_capstone.entity.User;
+import com.example.carmmunity_capstone.entity.*;
 import com.example.carmmunity_capstone.repository.FriendshipRepository;
 import com.example.carmmunity_capstone.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j; // Log 임포트
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j // 1. 로그 추가
 public class FriendshipService {
+
+    private final ApplicationEventPublisher eventPublisher;
+
+    // 2. SimpMessagingTemplate 주입 (RequiredArgsConstructor가 처리)
+    private final NotificationService notificationService;
 
     private final FriendshipRepository friendshipRepository;
     private final UserRepository userRepository;
+    private final ChatService chatService;
 
     /**
      * 1. 팔로우하기 (A가 B를 팔로우)
      * - B가 공개 계정: (A -> B, FOLLOWING) 즉시 생성
      * - B가 비공개 계정: (A -> B, PENDING) 생성
-     */
+    rm */
     public void followUser(String followerUuid, String followeeUuid) {
         User follower = findUserByUuid(followerUuid); // A (팔로우 거는 사람)
         User followee = findUserByUuid(followeeUuid); // B (팔로우 당하는 사람)
@@ -35,36 +42,47 @@ public class FriendshipService {
             throw new RuntimeException("자신을 팔로우할 수 없습니다.");
         }
 
-        // B가 A를 차단했는지, A가 B를 차단했는지 확인
         checkBlockStatus(follower, followee);
 
-        // B가 비공개 계정인지 확인
         FriendshipStatus newStatus = followee.isPrivate() ?
                 FriendshipStatus.PENDING :
                 FriendshipStatus.FOLLOWING;
 
-        // (A -> B) 관계를 찾음
         Friendship friendship = friendshipRepository.findByRequesterAndReceiver(follower, followee)
                 .orElse(
-                        Friendship.builder() // 관계가 없으면 새로 생성
+                        Friendship.builder()
                                 .requester(follower)
                                 .receiver(followee)
                                 .build()
                 );
 
-        // 기존 관계에 따른 분기 처리 (switch가 확장성에 용이)
-        switch (friendship.getStatus() != null ? friendship.getStatus() : FriendshipStatus.DECLINED) { // 편의상 null은 DECLINED 취급
+        switch (friendship.getStatus() != null ? friendship.getStatus() : FriendshipStatus.DECLINED) {
             case FOLLOWING:
                 throw new RuntimeException("이미 팔로우 중입니다.");
             case PENDING:
                 throw new RuntimeException("이미 팔로우 요청을 보낸 상태입니다.");
             case DECLINED:
-                // 거절됐던 상태면, 새 상태(PENDING 또는 FOLLOWING)로 업데이트
                 friendship.setStatus(newStatus);
                 friendshipRepository.save(friendship);
+
+                // --- [수정] 알림 로직 -> 이벤트 발행 ---
+                String message;
+                NotificationType type;
+
+                if (newStatus == FriendshipStatus.PENDING) {
+                    message = follower.getNickname() + "님이 회원님에게 팔로우 요청을 보냈습니다.";
+                    type = NotificationType.FOLLOW_REQUEST;
+                } else {
+                    message = follower.getNickname() + "님이 회원님을 팔로우합니다.";
+                    type = NotificationType.NEW_FOLLOWER;
+                }
+
+                // [수정] NotificationService 직접 호출 대신 이벤트 발행
+                eventPublisher.publishEvent(new FollowEvent(follower, followee, message, type));
+                // --- 알림 로직 끝 ---
+
                 break;
             case BLOCKED:
-                // blockUser에서 (A->B, BLOCKED)를 만들었으므로 이 경우는 checkBlockStatus에서 걸림
                 throw new RuntimeException("차단한 사용자입니다.");
         }
     }
@@ -74,6 +92,7 @@ public class FriendshipService {
      * (A -> B, FOLLOWING) 또는 (A -> B, PENDING) 레코드를 삭제합니다.
      */
     public void unfollowUser(String followerUuid, String followeeUuid) {
+        // (기존 로직 ...)
         User follower = findUserByUuid(followerUuid); // A
         User followee = findUserByUuid(followeeUuid); // B
 
@@ -100,7 +119,19 @@ public class FriendshipService {
 
         request.setStatus(FriendshipStatus.FOLLOWING);
         friendshipRepository.save(request);
-        // "역방향" 레코드는 절대 생성하지 않습니다.
+
+        // --- [수정] 알림 로직 -> 이벤트 발행 ---
+        String message = receiver.getNickname() + "님이 팔로우 요청을 수락했습니다.";
+
+        // [수정] NotificationService 직접 호출 대신 이벤트 발행
+        // (알림 유발자: receiver, 알림 수신자: requester)
+        eventPublisher.publishEvent(new FollowEvent(
+                receiver,
+                requester,
+                message,
+                NotificationType.FOLLOW_ACCEPTED
+        ));
+        // --- 알림 로직 끝 ---
     }
 
     /**
@@ -108,6 +139,7 @@ public class FriendshipService {
      * (B -> A, PENDING) 레코드를 (B -> A, DECLINED)로 변경합니다.
      */
     public void declineFollowRequest(String receiverUuid, String requesterUuid) {
+        // (기존 로직 ...)
         User receiver = findUserByUuid(receiverUuid);   // A (나)
         User requester = findUserByUuid(requesterUuid); // B (상대방)
 
@@ -119,9 +151,11 @@ public class FriendshipService {
         friendshipRepository.save(request);
     }
 
+    // ... (removeFollower, blockUser, unblockUser 등 나머지 메서드는 그대로) ...
+    // (기존 코드 생략)
+
     /**
      * 5. 팔로워 삭제하기 (A가 나를 팔로우하는 B를 삭제)
-     * (B -> A, FOLLOWING) 레코드를 삭제합니다.
      */
     public void removeFollower(String userUuid, String followerUuid) {
         User user = findUserByUuid(userUuid);         // A (나)
@@ -136,8 +170,6 @@ public class FriendshipService {
 
     /**
      * 6. 사용자 차단하기 (A가 B를 차단)
-     * (A -> B, BLOCKED) 레코드를 생성/업데이트합니다.
-     * (B -> A) 관계는 님 말씀대로 절대 건드리지 않습니다.
      */
     public void blockUser(String blockerUuid, String blockedUuid) {
         User blocker = findUserByUuid(blockerUuid); // A
@@ -156,7 +188,6 @@ public class FriendshipService {
 
     /**
      * 7. 사용자 차단 해제하기 (A가 B를 차단 해제)
-     * (A -> B, BLOCKED) 레코드를 삭제합니다.
      */
     public void unblockUser(String blockerUuid, String blockedUuid) {
         User blocker = findUserByUuid(blockerUuid);
@@ -199,19 +230,33 @@ public class FriendshipService {
      */
     @Transactional(readOnly = true)
     public List<UserSummaryDto> getFollowingList(String currentUserUuid, String targetUserUuid) {
+
+        // [수정됨] 현재 로그인한 유저를 찾습니다. (안 읽음 카운트 조회의 주체)
+        User currentUser = findUserByUuid(currentUserUuid);
+
         User targetUser = findUserByUuid(targetUserUuid);
 
-        // 권한 검사
         checkReadPermission(currentUserUuid, targetUser);
 
-        // (검사 통과) 로직 실행
         List<Friendship> relationships = friendshipRepository.findByRequesterAndStatus(
                 targetUser, FriendshipStatus.FOLLOWING
         );
 
+        // DTO를 만들 때 ChatService를 통해 안 읽음 카운트를 계산합니다.
         return relationships.stream()
-                .map(Friendship::getReceiver)
-                .map(UserSummaryDto::from)
+                .map(Friendship::getReceiver) // (followee: 내가 팔로우하는 사람)
+                .map(followee -> {
+
+                    int unreadCount = 0;
+                    // "내가 내 팔로잉 목록을 볼 때만" 안 읽음 카운트를 계산합니다.
+                    if (currentUserUuid.equals(targetUserUuid)) {
+                        // 4단계에서 만든 ChatService의 메서드 호출
+                        unreadCount = chatService.getUnreadMessageCount(currentUser, followee);
+                    }
+
+                    // 1단계에서 수정한 'from' 메서드를 사용합니다.
+                    return UserSummaryDto.from(followee, unreadCount);
+                })
                 .collect(Collectors.toList());
     }
 
@@ -253,8 +298,8 @@ public class FriendshipService {
                 .collect(Collectors.toList());
     }
 
-    // --- Helper Methods ---
 
+    // --- Helper Methods ---
     /**
      *
      * @param currentUserUuid 요청자

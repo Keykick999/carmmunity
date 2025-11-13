@@ -1,18 +1,18 @@
 package com.example.carmmunity_capstone.service;
 
-import com.example.carmmunity_capstone.dto.ChatMessageDto;
-import com.example.carmmunity_capstone.dto.MessageReadEventDto;
-import com.example.carmmunity_capstone.dto.WebSocketMessageDto;
-import com.example.carmmunity_capstone.dto.WebSocketReadMessageDto;
+import com.example.carmmunity_capstone.dto.*;
 import com.example.carmmunity_capstone.entity.*;
 import com.example.carmmunity_capstone.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -24,9 +24,9 @@ public class WebSocketChatService {
     private final ChatMessageRepository chatMessageRepository;
     private final ChatParticipantRepository chatParticipantRepository;
     private final MessageReadStatusRepository messageReadStatusRepository;
-
-    // (핵심) WebSocket 브로드캐스팅을 위한 템플릿
     private final SimpMessagingTemplate messagingTemplate;
+    private final ApplicationEventPublisher eventPublisher; // [신규]
+
 
     /**
      * 1. 메시지 전송 (Send) 로직
@@ -56,16 +56,34 @@ public class WebSocketChatService {
                 .build();
         messageReadStatusRepository.save(readStatus);
 
-        // 4. [안 읽은 수 계산]
-        long totalParticipants = chatParticipantRepository.countByChatRoom(room);
+        // 4. 알림 이벤트를 발행하기 위해 *모든* 참여자 조회
+        List<ChatParticipant> participants = chatParticipantRepository.findByChatRoom(room);
+
+        // 5. 받는 사람들에게 알림 이벤트 발행
+        for (ChatParticipant participant : participants) {
+            User recipient = participant.getUser();
+
+            // 보낸 사람(sender) 자신에게는 알림을 보내지 않습니다.
+            if (!recipient.getUserUuid().equals(senderUuid)) {
+                log.info("Publishing NewMessageEvent for recipient: {}", recipient.getNickname());
+
+                // 이 이벤트는 @TransactionalEventListener가 수신하여
+                // 트랜잭션이 *커밋된 후* NotificationService에서 알림을 보냅니다.
+                eventPublisher.publishEvent(new NewMessageEvent(
+                        sender,
+                        recipient,
+                        room.getChatRoomId().toString() // (roomId는 Long/String 타입에 맞게 전달)
+                ));
+            }
+        }
+
+        // 6. [안 읽은 수 계산]
+        long totalParticipants = participants.size(); // [수정됨]
         long unreadCount = totalParticipants - 1; // 보낸 사람 1명만 읽음
 
         // 5. 브로드캐스팅할 DTO 생성
         ChatMessageDto broadcastDto = ChatMessageDto.from(chatMessage, unreadCount);
 
-        // 🚩 [핵심 수정]
-        // 기존: messagingTemplate.convertAndSend(...)
-        // 변경: 트랜잭션이 *성공적으로 커밋된 후에만* 메시지를 방송하도록 콜백을 등록합니다.
 
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override

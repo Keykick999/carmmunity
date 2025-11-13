@@ -11,8 +11,10 @@ public class UserSummaryDto {
     private String userUuid;
     private String nickname;
     private String profileImagePath;
-    // 새로 추가된 필드: 현재 로그인된 유저와 이 목록 유저 간의 관계 상태
+    // 현재 로그인된 유저와 이 목록 유저 간의 관계 상태
     private RelationshipStatus relationshipStatus;
+    @Builder.Default // 기본값 0
+    private int unreadMessageCount = 0;
 
     /**
      * User 엔티티를 UserSummaryDto로 변환하는 정적 팩토리 메서드 (기본 정보만)
@@ -36,6 +38,15 @@ public class UserSummaryDto {
                 .nickname(user.getNickname())
                 .profileImagePath(user.getProfileImagePath())
                 .relationshipStatus(status) // 관계 상태 설정
+                .build();
+    }
+
+    public static UserSummaryDto from(User user, int unreadMessageCount) {
+        return UserSummaryDto.builder()
+                .userUuid(user.getUserUuid())
+                .nickname(user.getNickname())
+                .profileImagePath(user.getProfileImagePath())
+                .unreadMessageCount(unreadMessageCount)
                 .build();
     }
 }

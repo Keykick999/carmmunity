@@ -374,7 +374,7 @@
     <div class="header-right">
         <button
                 id="friendshipBtn"
-                class="write-button friend-button"
+                class="write-button friend-button position-relative"
                 data-bs-toggle="modal"
                 data-bs-target="#friendshipModal"
         >
@@ -382,6 +382,11 @@
                 <path d="M1 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-7a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/>
                 <path fill-rule="evenodd" d="M15.5 11a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h1.793l-3.147-3.146a.5.5 0 1 1 .708-.708l3.146 3.147V11.5a.5.5 0 0 1 .5-.5z"/>
             </svg>
+            <span id="notificationBadge"
+                  class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none"
+                  style="font-size: 0.7em; padding: 4px 6px;">
+                0
+            </span>
         </button>
         <a href="/postCreate" class="write-button">+ 글쓰기</a>
         <img id="profileImage" src="/assets/default-profile.png" class="user-profile" alt="유저 프로필" onclick="location.href='/main'">
@@ -427,6 +432,13 @@
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="request-tab" data-bs-toggle="tab" data-bs-target="#request-pane" type="button" role="tab" aria-controls="request-pane" aria-selected="false">✉️ 받은 요청 <span class="badge bg-danger" id="requestCount">0</span></button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="notification-tab" data-bs-toggle="tab" data-bs-target="#notification-pane" type="button" role="tab" aria-controls="notification-pane" aria-selected="false">
+                            🔔 알림
+                            <!-- [이 부분 추가] -->
+                            <span class="badge bg-danger ms-1 d-none" id="notificationModalBadge">0</span>
+                        </button>
+                    </li>
                 </ul>
 
                 <div class="tab-content" id="friendshipTabContent">
@@ -451,6 +463,13 @@
                     <div class="tab-pane fade p-3" id="request-pane" role="tabpanel" aria-labelledby="request-tab">
                         <div id="receivedRequestList" class="list-group list-group-flush">
                             <div class="text-muted text-center py-3">새로운 요청이 없습니다.</div>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade p-3" id="notification-pane" role="tabpanel" aria-labelledby="notification-tab">
+                        <!-- 알림 목록이 여기에 렌더링됩니다 -->
+                        <div id="notificationList" class="list-group list-group-flush">
+                            <div class="text-muted text-center py-3">새로운 알림이 없습니다.</div>
                         </div>
                     </div>
                 </div>

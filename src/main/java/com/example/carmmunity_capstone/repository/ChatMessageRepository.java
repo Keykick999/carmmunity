@@ -30,4 +30,21 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
             "  WHERE s.chatMessage = m AND s.user = :user" +
             ")")
     List<ChatMessage> findUnreadMessagesByUserInRoom(@Param("room") ChatRoom room, @Param("user") User user);
+
+    /**
+     * 특정 채팅방(roomId)에서, 특정 사용자(userId)가 읽지 않은 메시지 수를 계산합니다.
+     * (조건: 보낸 사람이 내가 아니고, 내 MessageReadStatus가 없는 메시지)
+     * [중요]: 'cm.sender.userId', 'mrs.user.userId'는 User 엔티티의 @Id 필드명이어야 합니다.
+     */
+    @Query("SELECT COUNT(cm) FROM ChatMessage cm " +
+            "WHERE cm.chatRoom.chatRoomId = :roomId " +
+            "AND cm.sender.userId != :userId " + // 내가 보낸 메시지는 제외
+            "AND NOT EXISTS (" +
+            "    SELECT 1 FROM MessageReadStatus mrs " +
+            "    WHERE mrs.chatMessage = cm AND mrs.user.userId = :userId" +
+            ")")
+    int countUnreadMessagesForUserInRoom(
+            @Param("roomId") Long roomId,
+            @Param("userId") String userId // User 엔티티의 @Id가 String이므로 String
+    );
 }

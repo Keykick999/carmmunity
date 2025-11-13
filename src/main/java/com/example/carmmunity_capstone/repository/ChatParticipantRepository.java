@@ -31,4 +31,6 @@ public interface ChatParticipantRepository extends JpaRepository<ChatParticipant
      * [추가] 사용자와 채팅방으로 특정 참여자 정보를 찾습니다. (권한 확인 및 '책갈피' 업데이트용)
      */
     Optional<ChatParticipant> findByUserAndChatRoom(User user, ChatRoom chatRoom);
+
+    List<ChatParticipant> findByChatRoom(ChatRoom chatRoom);
 }

@@ -303,4 +303,51 @@ public class ChatService {
         String names = users.stream().map(User::getNickname).limit(3).reduce((a, b) -> a + ", " + b).orElse("");
         return creator.getNickname() + ", " + names + "...";
     }
+
+    /**
+     * [신규] 두 사용자 간의 1:1 채팅방 안 읽음 카운트 조회
+     *
+     * @param currentUser (userA) 현재 로그인한 사용자 (안 읽음 카운트의 주체)
+     * @param friendUser (userB) 친구 (채팅 상대)
+     * @return 안 읽은 메시지 수
+     */
+    @Transactional(readOnly = true)
+    public int getUnreadMessageCount(User currentUser, User friendUser) {
+
+        // 1. 1:1 채팅방 조회를 위해 User 순서 정렬 (user1, user2)
+        // ChatRoom 엔티티의 user1, user2가 String userId를 기준으로 정렬되었다고 가정합니다.
+        User user1;
+        User user2;
+
+        if (currentUser.getUserId().compareTo(friendUser.getUserId()) < 0) {
+            user1 = currentUser;
+            user2 = friendUser;
+        } else {
+            user1 = friendUser;
+            user2 = currentUser;
+        }
+
+        // 2. ChatRoomRepository에서 1:1 채팅방 조회 (2단계에서 추가한 쿼리 사용)
+        Optional<ChatRoom> roomOpt = chatRoomRepository.findByUser1AndUser2AndType(
+                user1,
+                user2,
+                ChatRoomType.ONE_TO_ONE
+        );
+
+        // 3. 채팅방이 없으면 안 읽은 메시지는 0
+        if (roomOpt.isEmpty()) {
+            return 0;
+        }
+
+        ChatRoom room = roomOpt.get();
+
+        // 4. ChatMessageRepository에서 안 읽은 메시지 수 조회 (3단계에서 추가한 쿼리 사용)
+        // (currentUser의 String userId를 쿼리에 전달)
+        int unreadCount = chatMessageRepository.countUnreadMessagesForUserInRoom(
+                room.getChatRoomId(),
+                currentUser.getUserId()
+        );
+
+        return unreadCount;
+    }
 }
