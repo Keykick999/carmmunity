@@ -39,6 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const requestTab = document.getElementById('request-tab');
     const followingTab = document.getElementById('following-tab');
     const notificationTab = document.getElementById('notification-tab');
+    const refreshFollowingListBtn = document.getElementById('refreshFollowingListBtn');
 
     const friendshipModal = document.getElementById('friendshipModal');
     if (friendshipModal) {
@@ -66,6 +67,12 @@ document.addEventListener("DOMContentLoaded", () => {
         chatModalElement.addEventListener('hidden.bs.modal', () => {
             unsubscribeFromChatRoom();
         });
+    }
+
+    // '알림' 탭의 목록 영역(notificationList)에 이벤트 리스너 추가
+    const notificationListEl = document.getElementById('notificationList');
+    if (notificationListEl) {
+        notificationListEl.addEventListener('click', handleNotificationClick);
     }
 
     if (!token) {
@@ -114,6 +121,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 친구 목록 탭 클릭 시 목록 로드
     followingTab.addEventListener('shown.bs.tab', loadFollowingList);
+
+    /**
+     * "친구 목록" 탭 내부의 새로고침 버튼 클릭 시
+     */
+    if (refreshFollowingListBtn) {
+        refreshFollowingListBtn.addEventListener('click', () => {
+            console.log('친구 목록 새로고침 중...');
+
+            // 1. [핵심] 캐시된 데이터를 null로 만들어,
+            //    loadFollowingList 함수가 강제로 API를 호출하도록 함
+            followingListData = null;
+
+            // 2. 친구 목록 로드 함수 재호출
+            loadFollowingList();
+        });
+    }
 
     const sendChatBtn = document.getElementById('sendChatBtn');
     const chatInput = document.getElementById('chatInput');
@@ -269,6 +292,54 @@ async function loadUnreadInfoCount() {
 }
 
 /**
+ * 렌더링된 알림 목록을 클릭했을 때 실행되는 핸들러
+ */
+function handleNotificationClick(event) {
+    // 1. 클릭된 항목(또는 그 부모)이 .notification-item-clickable인지 확인
+    const item = event.target.closest('.notification-item-clickable');
+    if (!item) return; // 알림 항목이 아닌 곳을 클릭했으면 무시
+
+    // 2. data 속성에서 알림 정보 읽기
+    const type = item.dataset.notificationType;
+    const senderUuid = item.dataset.senderUuid;
+    const senderNickname = item.dataset.senderNickname;
+
+    // 3. 알림 유형에 따라 분기
+    switch (type) {
+        case 'NEW_MESSAGE':
+            if (!senderUuid || !senderNickname) {
+                console.error("채팅방을 열기 위한 사용자 정보가 없습니다.");
+                return;
+            }
+            // 1. (기존 함수 재사용) 채팅방 모달 열기
+            openChatModal(senderNickname, senderUuid);
+            // (openChatModal 함수가 자동으로 친구 모달을 닫아줄 것입니다.)
+            break;
+
+        case 'FOLLOW_REQUEST':
+            // 2. "받은 요청" 탭을 수동으로 활성화
+            const requestTabEl = document.getElementById('request-tab');
+            if (requestTabEl) {
+                new bootstrap.Tab(requestTabEl).show();
+            }
+            break;
+
+        case 'NEW_FOLLOWER':
+        case 'FOLLOW_ACCEPTED':
+            // 3. "친구 목록" 탭을 수동으로 활성화
+            const followingTabEl = document.getElementById('following-tab');
+            if (followingTabEl) {
+                new bootstrap.Tab(followingTabEl).show();
+            }
+            break;
+
+        default:
+            // (그 외 알림은 아무 동작 안 함)
+            break;
+    }
+}
+
+/**
  * [신규] 친구 목록의 '메시지' 버튼 배지 UI를 업데이트하는 함수
  * @param {string} friendUuid 친구의 UUID
  * @param {number} count 표시할 숫자
@@ -360,7 +431,13 @@ function renderNotificationList() {
         if (notification.type === 'FOLLOW_ACCEPTED') icon = '🤝';
 
         return `
-            <div class="list-group-item d-flex align-items-center">
+            <div class="list-group-item list-group-item-action d-flex align-items-center notification-item-clickable" 
+                 style="cursor: pointer;"
+                 data-notification-type="${notification.type}"
+                 data-sender-uuid="${notification.senderUserUuid || ''}"
+                 data-sender-nickname="${notification.senderNickname || ''}"
+                 data-room-id="${notification.roomId || ''}">
+
                 <span style="font-size: 1.2rem; margin-right: 12px;">${icon}</span>
                 <div style="line-height: 1.3;">
                     <span class="fw-bold">${notification.senderNickname}</span>

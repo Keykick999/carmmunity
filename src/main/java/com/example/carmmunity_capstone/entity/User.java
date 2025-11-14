@@ -5,9 +5,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
 import java.time.LocalDateTime;
-import java.util.UUID; // UUID를 import 합니다.
+import java.util.UUID;
 
 @EntityListeners(AuditingEntityListener.class)
 @Entity

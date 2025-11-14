@@ -17,4 +17,7 @@ public interface UserRepository extends JpaRepository<User, String> {
     Optional<User> findByUserUuid(String userUuid);
 
     List<User> findByNicknameContainingIgnoreCaseAndUserUuidNot(String nickname, String excludeUserUuid);
+
+    // 자체 로그인 ID로 찾는 메서드 (이미 있다면 그대로 두세요)
+    Optional<User> findByUserId(String userId);
 }
