@@ -121,4 +121,21 @@ public class HomeController {
         model.addAttribute("nickname", nickname);
         return "html/additional-signup";
     }
+
+    /**
+     * [신규] 기존 계정 발견 시, 소셜 계정 연동 여부를 사용자에게 확인하는 페이지
+     */
+    @GetMapping("/link-confirm")
+    public String linkConfirm(@RequestParam("providerId") String providerId,
+                              @RequestParam("provider") String provider,
+                              @RequestParam(value = "existingEmail", required = false) String existingEmail,
+                              Model model) {
+
+        // Model에 FailureHandler에서 전달받은 소셜 정보를 담아 View로 전달합니다.
+        model.addAttribute("providerId", providerId);
+        model.addAttribute("provider", provider);
+        model.addAttribute("existingEmail", existingEmail);
+
+        return "html/link-confirm";
+    }
 }

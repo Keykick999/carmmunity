@@ -13,8 +13,16 @@ import java.io.Serializable;
 @AllArgsConstructor
 @ToString
 public class OAuth2FailureData implements Serializable {
-    private final String providerId;
-    private final String provider;
-    private final String nickname;
-    private final String picture; // 프로필 이미지 경로
+    private String providerId;
+    private String provider;
+    private String nickname;
+    private String picture; // 프로필 이미지 경로
+    private String existingEmail; // DB에서 찾은 기존 사용자의 이메일을 담기 위한 필드
+
+    public OAuth2FailureData(String providerId, String provider, String nickname, String picture) {
+        this.providerId = providerId;
+        this.provider = provider;
+        this.nickname = nickname;
+        this.picture = picture;
+    }
 }

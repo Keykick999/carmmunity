@@ -18,7 +18,10 @@ public enum ErrorCode {
 
     // 댓글 좋아요 관련 에러
     COMMENT_ALREADY_LIKED(HttpStatus.CONFLICT, "이미 좋아요를 누른 댓글입니다."),
-    COMMENT_LIKE_NOT_FOUND(HttpStatus.NOT_FOUND, "좋아요한 댓글을 찾을 수 없습니다.");
+    COMMENT_LIKE_NOT_FOUND(HttpStatus.NOT_FOUND, "좋아요한 댓글을 찾을 수 없습니다."),
+
+    // 이메일 에러
+    EMAIL_DUPLICATE_FOR_LINKING(HttpStatus.CONFLICT, "입력하신 이메일은 이미 등록된 계정입니다. 연동을 진행해주세요.");
 
     private final HttpStatus status;
     private final String message;

@@ -12,7 +12,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-
 import java.io.IOException;
 
 @Component
@@ -53,9 +52,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // Principal 자리에 들어갈 UUID 문자열은 따로 준비합니다.
                 String uuidForPrincipal = user.getUserUuid();
 
+                // user.getPassword()가 null일 경우 안전하게 빈 문자열("")로 대체
+                // 이 방법은 userDetails.builder()의 non-null 요구사항을 충족시킵니다.
+                String safePassword = (user.getPassword() != null) ? user.getPassword() : "";
+
                 UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
                         .username(user.getUserUuid()) // UserDetails 내부 username
-                        .password(user.getPassword())
+                        .password(safePassword)
                         .roles("USER")
                         .build();
 

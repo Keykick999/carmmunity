@@ -37,7 +37,7 @@ public class User {
      * [변경 3] password는 nullable = true로 변경합니다.
      * 소셜 로그인 유저는 이 값이 null이거나, OAuthAttributes에서 채워준 임의의 값입니다.
      */
-    @Column(name = "password", nullable = true, length = 255) // nullable = false -> true
+    @Column(name = "password", nullable = true, length = 255)
     private String password;
 
     /**
@@ -67,20 +67,6 @@ public class User {
     private LocalDateTime createdAt;
 
     /**
-     * [신규 1] 소셜 로그인 제공자 (e.g., "local", "google", "naver", "kakao")
-     */
-    @Column(name = "provider", length = 20)
-    private String provider;
-
-    /**
-     * [신규 2] 소셜 로그인 제공자의 고유 ID
-     * (이메일 중복 방지 외에 추가적인 식별자로 사용될 수 있음)
-     */
-    @Column(name = "provider_id", length = 255)
-    private String providerId;
-
-
-    /**
      * [변경 4] PK가 되었으므로 @PrePersist는 그대로 유지합니다.
      * 새 엔티티가 저장되기 직전에 UUID를 생성합니다.
      */
@@ -88,10 +74,6 @@ public class User {
     public void prePersist() {
         if (this.userUuid == null) {
             this.userUuid = UUID.randomUUID().toString();
-        }
-        // (선택) 자체 회원가입 시 provider 기본값 설정
-        if (this.provider == null) {
-            this.provider = "local"; // "local"은 자체 회원가입을 의미
         }
     }
 }

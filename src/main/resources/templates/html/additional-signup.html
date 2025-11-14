@@ -70,11 +70,12 @@
             return;
         }
 
+
         try {
             const res = await fetch("/email/send", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, purpose: "signup" })
+                body: JSON.stringify({ email, purpose: "link" })
             });
 
             alert(res.ok ? "인증 코드가 발송되었습니다." : "이메일 발송 실패. 이메일 주소를 확인해주세요.");
@@ -97,12 +98,20 @@
             return;
         }
 
+        const redirectPayload = {
+            providerId: document.getElementById('providerId').value,
+            provider: document.getElementById('provider').value,
+            nickname: document.getElementById('nickname').value,
+            email: email, // 사용자가 입력한 이메일
+        };
+
         try {
             const res = await fetch("/email/verify", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, code, purpose: "signup" })
+                body: JSON.stringify({ email, code, purpose: "link" })
             });
+
 
             if (res.ok) {
                 isEmailVerified = true; // 💡 인증 성공! 플래그 설정
@@ -114,9 +123,21 @@
                 codeInput.disabled = true;
                 document.getElementById("sendCodeBtn").disabled = true;
                 document.getElementById("verifyCodeBtn").disabled = true;
-            } else {
-                isEmailVerified = false;
-                alert("코드가 올바르지 않거나 이미 만료되었습니다.");
+            } else if (res.status === 409) {
+                // 1. 연동 확인 페이지로 리다이렉트 URL 생성
+                const redirectUrl = '/link-confirm?' +
+                    `providerId=${redirectPayload.providerId}` +
+                    `&provider=${redirectPayload.provider}` +
+                    `&nickname=${redirectPayload.nickname}` +
+                    `&existingEmail=${redirectPayload.email}`; // redirectPayload 사용
+
+                // 2. 연동 확인 페이지로 이동
+                alert("이미 가입된 이메일입니다. 계정 연동을 확인합니다.");
+                window.location.href = redirectUrl;
+            } else { // 400 Bad Request, 500 Internal Server Error 등 일반적인 실패
+                const result = await response.json();
+                document.getElementById('resultMessage').textContent = result?.message || "유효하지 않은 요청입니다.";
+                document.getElementById('resultMessage').style.display = 'block';
             }
         } catch (error) {
             alert("인증 확인 중 오류가 발생했습니다.");

@@ -22,7 +22,6 @@ public class UserController {
 
     private final UserService userService;
     private final JwtTokenProvider jwtTokenProvider;
-    private final EmailVerificationService emailVerificationService;
 
     // 회원가입
     @PostMapping
@@ -114,5 +113,17 @@ public class UserController {
                     Collections.singletonMap("message", "회원가입 처리 중 알 수 없는 오류가 발생했습니다."),
                     HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    /**
+     * [신규] 계정 연동 확인 후 최종적으로 외부 Provider 정보를 DB에 링크하는 API
+     * POST /users/link-account
+     */
+    @PostMapping("/link-account")
+    public ResponseEntity<UserLinkResponse> linkAccount(@RequestBody @Valid UserLinkRequest request) {
+        UserLinkResponse response = userService.linkAccount(request);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(response);
     }
 }

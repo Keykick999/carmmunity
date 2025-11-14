@@ -80,8 +80,6 @@ public class OAuthAttributes {
                 .nickname(name) // (정책) 닉네임은 우선 이름(name)으로
                 .introduction("자기소개가 아직 없습니다.")
                 .profileImagePath("/image/UserImageDefault.png")
-                .provider(provider)
-                .providerId(providerId)
                 .password(UUID.randomUUID().toString()) // (보안) 비번 필드 임의의 값으로 채우기
                 .isPrivate(false)
                 .build();

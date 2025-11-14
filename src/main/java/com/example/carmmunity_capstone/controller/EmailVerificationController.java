@@ -17,7 +17,6 @@ public class EmailVerificationController {
 
     @PostMapping("/send")
     public ResponseEntity<?> sendCode(@RequestBody @Valid EmailCodeSendRequest request) {
-        System.out.println("request = " + request);
         service.sendVerificationCode(
                 request.getEmail(),
                 request.getPurpose()

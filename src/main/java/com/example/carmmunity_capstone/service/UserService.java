@@ -6,11 +6,14 @@ import com.example.carmmunity_capstone.dto.*;
 import com.example.carmmunity_capstone.entity.EmailAlreadyInUseException;
 import com.example.carmmunity_capstone.entity.Term;
 import com.example.carmmunity_capstone.entity.User;
+import com.example.carmmunity_capstone.entity.UserProvider;
 import com.example.carmmunity_capstone.exception.UnauthenticatedUserException;
 import com.example.carmmunity_capstone.repository.TermRepository;
+import com.example.carmmunity_capstone.repository.UserProviderRepository;
 import com.example.carmmunity_capstone.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -19,6 +22,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,6 +40,7 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final UserProviderRepository userProviderRepository;
     private final TermRepository termRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
@@ -92,7 +97,6 @@ public class UserService {
                 .build();
 
         userRepository.save(user);
-
         userTermService.saveUserAgreements(user.getUserId(), agreements);
     }
 
@@ -273,33 +277,63 @@ public class UserService {
         User newUser = User.builder()
                 .email(request.getEmail())
                 .nickname(request.getNickname())
-                .provider(request.getProvider())
-                .providerId(request.getProviderId())
                 .name(request.getNickname()) // 이름은 닉네임과 동일하게 설정 (정책에 따라 변경 가능)
                 .isPrivate(false)
                 .introduction("자기소개가 아직 없습니다.")
                 .profileImagePath("/image/UserImageDefault.png")
+                .isPrivate(false)
                 .build();
 
         // 3. DB 저장
-        return userRepository.save(newUser);
+        User saved = userRepository.save(newUser);
+        UserProvider provider = UserProvider.builder()
+                .user(saved)
+                .provider(request.getProvider())
+                .providerId(request.getProviderId())
+                .build();
+        userProviderRepository.save(provider);
+        return saved;
     }
 
+    /**
+     * [신규] 계정 연동을 수행하고, 성공 시 JWT를 발급합니다.
+     * @param request 연동 요청 DTO
+     * @return 발급된 JWT와 성공 메시지
+     */
+    public UserLinkResponse linkAccount(UserLinkRequest request) {
+        // 1. 기존 유저를 이메일로 찾습니다.
+        User existingUser = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "기존 계정을 찾을 수 없습니다.")
+                );
 
-    /*
-    // 회원 탈퇴
-    @Transactional
-    public void withdraw(String userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+        // 2. 해당 Provider가 이미 연동되어 있는지 최종 확인 (이중 체크)
+        Optional<UserProvider> existingLink = userProviderRepository
+                .findByUserAndProvider(existingUser, request.getProvider());
 
-        WithdrawnUser withdrawnUser = WithdrawnUser.builder()
-                .userId(user.getUserId())
-                .deletedAt(LocalDateTime.now())
+        if (existingLink.isPresent()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "이미 해당 Provider와 연동된 계정입니다.");
+        }
+
+        // 3. UserProvider 연동 정보 생성 및 저장
+        UserProvider newProviderLink = UserProvider.builder()
+                .user(existingUser) // FK 설정
+                .provider(request.getProvider())
+                .providerId(request.getProviderId())
                 .build();
 
-        withdrawnUserRepository.save(withdrawnUser);
-        userRepository.delete(user);
+        userProviderRepository.save(newProviderLink);
+
+        // 4. 연동 성공 후, 해당 유저의 JWT 토큰을 새로 발급하여 즉시 로그인 처리
+        String newAccessToken = jwtTokenProvider.createToken(existingUser.getUserUuid());
+
+        return UserLinkResponse.builder()
+                .message("계정 연동이 완료되었습니다.")
+                .accessToken(newAccessToken)
+                .userUuid(existingUser.getUserUuid())
+                .build();
     }
-     */
 }
