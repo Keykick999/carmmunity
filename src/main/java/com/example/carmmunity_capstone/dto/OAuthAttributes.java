@@ -1,4 +1,4 @@
-// com/example/carmmunity_capstone/dto/OAuthAttributes.java
+package com.example.carmmunity_capstone.dto;// com/example/carmmunity_capstone/dto/OAuthAttributes.java
 
 import com.example.carmmunity_capstone.entity.User;
 import lombok.Builder;
@@ -42,14 +42,13 @@ public class OAuthAttributes {
 
     @SuppressWarnings("unchecked")
     private static OAuthAttributes ofNaver(String userNameAttributeName, Map<String, Object> attributes) {
-        Map<String, Object> response = (Map<String, Object>) attributes.get(userNameAttributeName);
+        Map<String, String> response = (Map<String, String>) attributes.get("response");
 
         return OAuthAttributes.builder()
-                .name((String) response.get("name"))
-                .email((String) response.get("email"))
-                .picture((String) response.get("profile_image"))
+                .name(response.get("name"))
+                .email(response.get("email"))
                 .provider("naver")
-                .providerId((String) response.get("id"))
+                .providerId(response.get("id"))
                 .attributes(attributes)
                 .nameAttributeKey(userNameAttributeName)
                 .build();
@@ -65,7 +64,7 @@ public class OAuthAttributes {
                 .email((String) kakaoAccount.get("email"))
                 .picture((String) profile.get("profile_image_url"))
                 .provider("kakao")
-                .providerId(String.valueOf(attributes.get(userNameAttributeName))) // "id"
+                .providerId(String.valueOf(attributes.get("id")))
                 .attributes(attributes)
                 .nameAttributeKey(userNameAttributeName)
                 .build();
@@ -79,15 +78,12 @@ public class OAuthAttributes {
                 .name(name)
                 .email(email)
                 .nickname(name) // (정책) 닉네임은 우선 이름(name)으로
-                .profileImagePath(picture)
+                .introduction("자기소개가 아직 없습니다.")
+                .profileImagePath("/image/UserImageDefault.png")
                 .provider(provider)
                 .providerId(providerId)
-                // password는 nullable=true로 변경했다고 가정
-                // 만약 NOT NULL 제약조건이 있다면 임의의 값을 넣어줘야 함
                 .password(UUID.randomUUID().toString()) // (보안) 비번 필드 임의의 값으로 채우기
                 .isPrivate(false)
-                // userUuid는 @PrePersist로 자동 생성
-                // userId (자체 로그인 ID)는 null
                 .build();
     }
 

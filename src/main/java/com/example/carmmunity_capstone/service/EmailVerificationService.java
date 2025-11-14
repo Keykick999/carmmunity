@@ -58,8 +58,6 @@ public class EmailVerificationService {
                 .findTopByEmailAndPurposeOrderByCreatedAtDesc(email, purpose)
                 .orElseThrow(() -> new IllegalArgumentException("인증 요청이 없습니다."));
 
-        if (verification.getIsVerified()) return;
-
         if (verification.isExpired()) {
             throw new IllegalArgumentException("인증 코드가 만료되었습니다.");
         }
@@ -70,6 +68,8 @@ public class EmailVerificationService {
 
         verification.setIsVerified(true);
         repository.save(verification);
+
+        if (verification.getIsVerified()) return;
     }
 
     private String generateCode() {

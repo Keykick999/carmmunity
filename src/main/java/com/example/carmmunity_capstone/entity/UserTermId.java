@@ -14,7 +14,7 @@ import java.util.Objects;
 @AllArgsConstructor
 public class UserTermId implements Serializable {
 
-    private String userId;
+    private String userUuid; // userId -> userUuid
     private String termCode;
 
     @Override
@@ -22,12 +22,12 @@ public class UserTermId implements Serializable {
         if (this == o) return true;
         if (!(o instanceof UserTermId)) return false;
         UserTermId that = (UserTermId) o;
-        return Objects.equals(userId, that.userId) &&
+        return Objects.equals(userUuid, that.userUuid) &&
                 Objects.equals(termCode, that.termCode);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(userId, termCode);
+        return Objects.hash(userUuid, termCode);
     }
 }

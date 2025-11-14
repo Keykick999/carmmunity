@@ -3,6 +3,7 @@ package com.example.carmmunity_capstone.service;
 
 import com.example.carmmunity_capstone.config.JwtTokenProvider;
 import com.example.carmmunity_capstone.dto.*;
+import com.example.carmmunity_capstone.entity.EmailAlreadyInUseException;
 import com.example.carmmunity_capstone.entity.Term;
 import com.example.carmmunity_capstone.entity.User;
 import com.example.carmmunity_capstone.exception.UnauthenticatedUserException;
@@ -256,7 +257,33 @@ public class UserService {
         return userRepository.findByUserUuid(userId);
     }
 
+    /**
+     * [신규] 이메일 미제공 소셜 유저의 최종 회원가입을 완료합니다.
+     */
+    @Transactional
+    public User completeSocialRegistration(SocialCompleteRequest request) {
+        // 1. 이메일 중복 검사 (혹시 다른 유저가 이 이메일로 이미 가입했을 경우)
+        Optional<User> existingUser = userRepository.findByEmail(request.getEmail());
+        if (existingUser.isPresent()) {
+            throw new EmailAlreadyInUseException("이미 사용 중인 이메일 주소입니다. 다른 계정으로 로그인해주세요.");
+        }
 
+        // 2. User 엔티티 생성 (최종 저장)
+        // 이 로직은 OAuthAttributes.toEntity()와 유사하지만, 이메일을 수동으로 받습니다.
+        User newUser = User.builder()
+                .email(request.getEmail())
+                .nickname(request.getNickname())
+                .provider(request.getProvider())
+                .providerId(request.getProviderId())
+                .name(request.getNickname()) // 이름은 닉네임과 동일하게 설정 (정책에 따라 변경 가능)
+                .isPrivate(false)
+                .introduction("자기소개가 아직 없습니다.")
+                .profileImagePath("/image/UserImageDefault.png")
+                .build();
+
+        // 3. DB 저장
+        return userRepository.save(newUser);
+    }
 
 
     /*

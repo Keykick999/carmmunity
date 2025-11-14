@@ -26,7 +26,7 @@ public class UserTermService {
     public void saveUserAgreements(String userId, List<UserTermAgreementRequest> agreements) {
         for (UserTermAgreementRequest dto : agreements) {
             UserTerm userTerm = UserTerm.builder()
-                    .userId(userId)
+                    .userUuid(userId)
                     .termCode(dto.getTermCode())
                     .isAgreed(dto.isAgreed())
                     .createdAt(LocalDateTime.now())
@@ -40,14 +40,14 @@ public class UserTermService {
      * 특정 사용자 약관 전체 조회
      */
     public List<UserTerm> getUserTerms(String userId) {
-        return userTermRepository.findByUserId(userId);
+        return userTermRepository.findByUserUuid(userId);
     }
 
     /**
      * 특정 사용자 약관 동의 여부 단일 조회
      */
     public UserTerm getAgreement(String userId, String termCode) {
-        return userTermRepository.findByUserIdAndTermCode(userId, termCode)
+        return userTermRepository.findByUserUuidAndTermCode(userId, termCode)
                 .orElse(null);
     }
 

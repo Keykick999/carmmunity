@@ -102,6 +102,29 @@
 
     <button class="btn-login" id="loginBtn">로그인</button>
 
+    <div class="d-flex align-items-center my-3">
+        <hr class="flex-grow-1">
+        <span class="px-3 text-muted" style="font-size: 0.9rem;">OR</span>
+        <hr class="flex-grow-1">
+    </div>
+
+    <div class="d-grid gap-2">
+        <a href="/oauth2/authorization/google" class="btn btn-light border" role="button" style="display: flex; align-items: center; justify-content: center;">
+            <img src="[구글 로고 이미지 경로]" alt="Google" style="height: 20px; margin-right: 10px;">
+            Google로 로그인
+        </a>
+
+        <a href="/oauth2/authorization/naver" class="btn btn-light border" role="button" style="display: flex; align-items: center; justify-content: center; background-color: #03C75A; color: white; border-color: #03C75A;">
+            <img src="[네이버 로고 이미지 경로]" alt="Naver" style="height: 20px; margin-right: 10px;">
+            Naver로 로그인
+        </a>
+
+        <a href="/oauth2/authorization/kakao" class="btn btn-light border" role="button" style="display: flex; align-items: center; justify-content: center; background-color: #FEE500; color: #3C1E1E; border-color: #FEE500;">
+            <img src="[카카오 로고 이미지 경로]" alt="Kakao" style="height: 20px; margin-right: 10px;">
+            Kakao로 로그인
+        </a>
+    </div>
+
     <div class="auth-links">
         <div><a href="/signUp">회원가입</a></div>
         <div><a href="/id-find">아이디 찾기</a> | <a href="/pw-find">비밀번호 초기화</a></div>

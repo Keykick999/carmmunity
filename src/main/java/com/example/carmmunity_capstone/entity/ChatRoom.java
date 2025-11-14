@@ -13,8 +13,7 @@ import java.util.List;
 @Entity
 @Table(name = "ChatRoom",
         uniqueConstraints = {
-                // 1:1 채팅방의 유일성을 보장 (user1, user2, type의 조합은 유일해야 함)
-                @UniqueConstraint(columnNames = {"user1_id", "user2_id", "type"})
+                @UniqueConstraint(columnNames = {"user1_uuid", "user2_uuid", "type"})
         }
 )
 @Getter
@@ -37,18 +36,16 @@ public class ChatRoom {
     private ChatRoomType type;
 
     // --- 1:1 채팅방 빠른 조회를 위한 필드 ---
-    // (Type이 ONE_TO_ONE일 때만 사용)
 
     // 항상 ID가 더 작은(앞서는) 사용자
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user1_id")
+    @JoinColumn(name = "user1_uuid")
     private User user1;
 
     // 항상 ID가 더 큰(뒤따르는) 사용자
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user2_id")
+    @JoinColumn(name = "user2_uuid")
     private User user2;
-    // ---
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)

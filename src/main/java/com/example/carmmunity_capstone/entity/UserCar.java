@@ -19,7 +19,7 @@ public class UserCar {
 
     @MapsId("userId")
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_uuid", nullable = false)
     private User user;
 
     @Column(name = "image_path")

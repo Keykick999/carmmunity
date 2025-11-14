@@ -2,14 +2,17 @@ package com.example.carmmunity_capstone.controller;
 
 import com.example.carmmunity_capstone.config.JwtTokenProvider;
 import com.example.carmmunity_capstone.dto.*;
+import com.example.carmmunity_capstone.entity.EmailAlreadyInUseException;
 import com.example.carmmunity_capstone.service.EmailVerificationService;
 import com.example.carmmunity_capstone.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Collections;
 import java.util.Map;
 
 @RestController
@@ -83,5 +86,33 @@ public class UserController {
                 request.getVerificationCode()
         );
         return ResponseEntity.ok("비밀번호가 성공적으로 변경되었습니다.");
+    }
+
+    // =======================================================
+    // 소셜 로그인 이메일 미제공 시 최종 회원가입 API
+    // POST /users/social-complete
+    // =======================================================
+    @PostMapping("/social-complete")
+    public ResponseEntity<Map<String, String>> completeSocialRegistration(@RequestBody @Valid SocialCompleteRequest request) {
+        System.out.println("request = " + request);
+        try {
+            userService.completeSocialRegistration(request);
+
+            // 성공 시, 201 Created 응답 (프론트에서 이 후 /login으로 리다이렉트 유도)
+            return new ResponseEntity<>(
+                    Collections.singletonMap("message", "회원가입이 완료되었습니다."),
+                    HttpStatus.CREATED);
+        } catch (EmailAlreadyInUseException e) {
+            // 이메일 중복 오류 처리 (400 Bad Request)
+            System.out.println("이메일 중복");
+            return new ResponseEntity<>(
+                    Collections.singletonMap("message", e.getMessage()),
+                    HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            // 기타 오류 처리 (500 Internal Server Error)
+            return new ResponseEntity<>(
+                    Collections.singletonMap("message", "회원가입 처리 중 알 수 없는 오류가 발생했습니다."),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }

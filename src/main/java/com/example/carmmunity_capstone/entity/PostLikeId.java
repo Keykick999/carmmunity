@@ -15,7 +15,8 @@ import java.util.Objects;
 @AllArgsConstructor
 public class PostLikeId implements Serializable {
     private Integer postId;
-    private String userId;
+
+    private String userUuid; // userId -> userUuid
 
     @Override
     public boolean equals(Object o) {
@@ -23,11 +24,11 @@ public class PostLikeId implements Serializable {
         if (!(o instanceof PostLikeId)) return false;
         PostLikeId that = (PostLikeId) o;
         return Objects.equals(postId, that.postId) &&
-                Objects.equals(userId, that.userId);
+                Objects.equals(userUuid, that.userUuid);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(postId, userId);
+        return Objects.hash(postId, userUuid);
     }
 }

@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 public class WithdrawnUser {
 
     @Id
-    @Column(name = "User_ID", length = 50)
+    @Column(name = "user_uuid", length = 50)
     private String userId;
 
     @Column(name = "Deleted_At")

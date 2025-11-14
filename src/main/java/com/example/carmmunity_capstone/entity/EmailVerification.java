@@ -19,7 +19,7 @@ public class EmailVerification {
     @Column(name = "Email", nullable = false, length = 255)
     private String email;
 
-    @Column(name = "User_ID", length = 50)
+    @Column(name = "user_uuid", length = 50)
     private String userId;
 
     @Column(name = "Verification_Code", nullable = false, length = 10)

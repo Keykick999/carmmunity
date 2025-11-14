@@ -18,8 +18,8 @@ import java.time.LocalDateTime;
 public class UserTerm {
 
     @Id
-    @Column(name = "User_ID", length = 50)
-    private String userId;
+    @Column(name = "user_uuid", length = 50)
+    private String userUuid;
 
     @Id
     @Column(name = "Term_Code", length = 10)

@@ -12,8 +12,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "Friendship",
         uniqueConstraints = {
-                // requester와 receiver 쌍은 유일해야 함
-                @UniqueConstraint(columnNames = {"requester_id", "receiver_id"})
+                @UniqueConstraint(columnNames = {"requester_uuid", "receiver_uuid"})
         }
 )
 @Getter
@@ -30,12 +29,12 @@ public class Friendship {
 
     // 요청을 보낸 사용자 (ManyToOne 관계)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "requester_id", nullable = false)
+    @JoinColumn(name = "requester_uuid", nullable = false)
     private User requester;
 
     // 요청을 받은 사용자 (ManyToOne 관계)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "receiver_id", nullable = false)
+    @JoinColumn(name = "receiver_uuid", nullable = false)
     private User receiver;
 
     // 관계 상태 (PENDING, ACCEPTED, DECLINED, BLOCKED)

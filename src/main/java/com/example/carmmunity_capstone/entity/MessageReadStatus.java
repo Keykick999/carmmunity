@@ -33,7 +33,7 @@ public class MessageReadStatus {
 
     // 이 메시지를 읽은 유저
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_uuid", nullable = false)
     private User user;
 
     @CreatedDate

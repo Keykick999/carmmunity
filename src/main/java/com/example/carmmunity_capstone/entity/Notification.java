@@ -22,11 +22,11 @@ public class Notification {
     private Long notificationId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "recipient_id", nullable = false)
+    @JoinColumn(name = "recipient_uuid", nullable = false)
     private User recipient; // (필수) 알림을 받는 사람
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sender_id")
+    @JoinColumn(name = "sender_uuid")
     private User sender; // (선택) 알림을 유발한 사람 (시스템 알림은 null)
 
     @Enumerated(EnumType.STRING)

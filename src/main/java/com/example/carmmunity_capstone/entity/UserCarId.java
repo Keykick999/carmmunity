@@ -15,7 +15,7 @@ import java.util.Objects;
 @Getter
 public class UserCarId implements Serializable {
 
-    @Column(name = "user_id")
+    @Column(name = "user_uuid")
     private String userId;
 
     @Column(name = "car_id")
