@@ -27,7 +27,6 @@ import java.util.List;
 public class NotificationService {
 
     private final SimpMessagingTemplate messagingTemplate;
-
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
 
@@ -46,7 +45,6 @@ public class NotificationService {
     public void handleFollowEvent(FollowEvent event) {
         log.info("트랜잭션 커밋 완료, 팔로우 이벤트 수신. 알림 전송 시작.");
 
-        // (기존의 sendNotification 로직이 이 안으로 들어옴)
         User sender = event.getSender();
         User receiver = event.getReceiver();
 
@@ -65,35 +63,34 @@ public class NotificationService {
                 .sender(sender)
                 .type(event.getType())
                 .message(event.getMessage())
-                // .isRead(false)는 @Builder.Default로 자동 설정됨
                 .build();
 
-        // 3. [신규] 알림을 DB에 저장
+        // 3. 알림을 DB에 저장
         Notification savedNotification = notificationRepository.save(newNotification);
 
-        // 4. [신규] 실시간 전송 DTO 생성 (DB 엔티티 기반)
+        // 4. 실시간 전송 DTO 생성 (DB 엔티티 기반)
         // (NotificationDto.from 정적 메서드 사용)
         NotificationDto notificationDto = NotificationDto.from(savedNotification);
 
-        // 5. [신규] 클라이언트로 실제 알림 전송
+        // 5. 클라이언트로 실제 알림 전송
         sendNotification(receiver, notificationDto);
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleMessageEvent(NewMessageEvent event) {
-        // 1. 유효성 검사
+        // 유효성 검사
         User sender = event.getSender();
         User recipient = event.getRecipient();
 
         if (recipient == null || sender.getUserUuid().equals(recipient.getUserUuid())) {
             log.warn("메시지 알림 수신자가 유효하지 않습니다. (Sender: {}, Receiver: {})", sender.getUserUuid(), recipient != null ? recipient.getUserUuid() : "null");
-            return; // 알림 저장 및 전송 중단
+            return;
         }
 
         log.info("메시지 이벤트 수신 (DB 저장 및 전송): {} -> {}", event.getSender().getNickname(), event.getRecipient().getNickname());
 
-        // 1. 알림 엔티티 생성 (DB에 저장하기 위해)
+        // 알림 엔티티 생성 (DB에 저장하기 위해)
         Notification newNotification = Notification.builder()
                 .recipient(event.getRecipient())
                 .sender(event.getSender())
@@ -101,12 +98,10 @@ public class NotificationService {
                 .message("새로운 메시지가 도착했습니다.")
                 .build();
 
-        // 2. 알림을 DB에 저장
-        // (이 리스너는 새 트랜잭션에서 실행되므로, 여기서 save 가능)
+        // 알림을 DB에 저장
         Notification savedNotification = notificationRepository.save(newNotification);
 
-        // 3. 실시간 전송을 위한 DTO 생성
-        // (DB에 저장된 정보 + 이벤트의 roomId 결합)
+        // 실시간 전송을 위한 DTO 생성
         NotificationDto notificationDto = NotificationDto.builder()
                 .notificationId(savedNotification.getNotificationId())
                 .type(savedNotification.getType())
@@ -116,7 +111,7 @@ public class NotificationService {
                 .message(savedNotification.getMessage())
                 .isRead(savedNotification.isRead())
                 .createdAt(savedNotification.getCreatedAt())
-                .roomId(event.getRoomId()) // 이벤트에서 roomId 추가
+                .roomId(event.getRoomId())
                 .build();
 
         // 4. 클라이언트로 실제 알림 전송
@@ -132,11 +127,9 @@ public class NotificationService {
 
         String destination = "/topic/notifications/" + receiver.getUserUuid();
 
-        // 2. WebSocket 전송 오류는 항상 try-catch로 감싸야 합니다.
         try {
             messagingTemplate.convertAndSend(destination, dto);
         } catch (Exception e) {
-            // (트랜잭션은 이미 커밋되었으므로) 여기서는 예외를 로깅만 합니다.
             log.error("WebSocket 알림 전송 실패: (User: {}), Error: {}", receiver.getUserUuid(), e.getMessage(), e);
         }
     }

@@ -17,5 +17,5 @@ public interface UserCarRepository extends JpaRepository<UserCar, UserCarId> {
 
     Optional<UserCar> findByIdAndDeletedAtIsNull(UserCarId id);
 
-    List<UserCar> findAllByUser_UserIdAndDeletedAtIsNull(String userId);
+    List<UserCar> findAllByUser_UserUuidAndDeletedAtIsNull(String userId);
 }

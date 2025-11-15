@@ -1,5 +1,4 @@
-package com.example.carmmunity_capstone.config; // 경로는 알맞게 수정하세요
-
+package com.example.carmmunity_capstone.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;

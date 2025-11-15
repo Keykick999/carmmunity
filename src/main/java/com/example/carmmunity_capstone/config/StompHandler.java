@@ -16,9 +16,9 @@ import java.util.Collections;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class StompHandler implements ChannelInterceptor {   // websocket에서 데이터를 주고 받을 때 인증된 사용자 정보 확인하기 위해 사용
+public class StompHandler implements ChannelInterceptor {
 
-    private final JwtTokenProvider jwtTokenProvider; // 제공해주신 JwtTokenProvider
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
@@ -35,7 +35,6 @@ public class StompHandler implements ChannelInterceptor {   // websocket에서 �
                 String token = authorizationHeader.substring(7);
                 if (jwtTokenProvider.validateToken(token)) {
                     String userUuid = jwtTokenProvider.getUserId(token);
-                    System.out.println("userUuid in config file = " + userUuid);
                     Authentication authentication = new UsernamePasswordAuthenticationToken(userUuid, null, Collections.emptyList());
 
                     // 세션 속성(Session Attributes)에 인증 정보 저장
@@ -60,7 +59,6 @@ public class StompHandler implements ChannelInterceptor {   // websocket에서 �
 
             // 세션에서 저장해뒀던 인증 정보 검색
             Authentication authentication = (Authentication) accessor.getSessionAttributes().get("userAuthentication");
-            System.out.println("authentication = " + authentication);
 
             if (authentication != null) {
                 // 현재 메시지의 accessor에 User 설정

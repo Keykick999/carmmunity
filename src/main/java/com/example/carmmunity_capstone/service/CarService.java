@@ -31,7 +31,7 @@ public class CarService {
     // 차량 저장 (슬롯 선택 또는 첫 저장은 slot 1 강제)
     public void registerTunedCar(UserCarUploadRequestDto dto) {
         User user = userService.getAuthenticatedUser();
-        int currentCount = userCarRepository.countUserCars(user.getUserId());
+        int currentCount = userCarRepository.countUserCars(user.getUserUuid());
 
         Integer carId = dto.getCarId();
 
@@ -45,7 +45,7 @@ public class CarService {
             return;
         }
 
-        UserCarId id = new UserCarId(user.getUserId(), carId);
+        UserCarId id = new UserCarId(user.getUserUuid(), carId);
 
         UserCar userCar = UserCar.builder()
                 .id(id)
@@ -62,7 +62,7 @@ public class CarService {
     // 단일 차량 조회
     public Resource getTunedCar(Integer carId) throws MalformedURLException {
         User user = userService.getAuthenticatedUser();
-        UserCarId userCarId = new UserCarId(user.getUserId(), carId);
+        UserCarId userCarId = new UserCarId(user.getUserUuid(), carId);
 
         UserCar userCar = userCarRepository.findByIdAndDeletedAtIsNull(userCarId)
                 .orElseThrow(() -> new CarNotFoundException("해당 차량을 찾을 수 없습니다."));
@@ -75,7 +75,7 @@ public class CarService {
     public List<UserCarResponseDto> getUserCarList() {
         User user = userService.getAuthenticatedUser();
 
-        return userCarRepository.findAllByUser_UserIdAndDeletedAtIsNull(user.getUserId())
+        return userCarRepository.findAllByUser_UserUuidAndDeletedAtIsNull(user.getUserUuid())
                 .stream()
                 .map(car -> new UserCarResponseDto(car.getId().getCarId(), car.getImagePath()))
                 .toList();

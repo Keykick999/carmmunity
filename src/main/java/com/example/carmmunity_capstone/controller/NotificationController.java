@@ -41,7 +41,6 @@ public class NotificationController {
     @GetMapping
     public ResponseEntity<Slice<NotificationDto>> getNotificationList(
             @AuthenticationPrincipal String currentUserUuid,
-            // (최신순으로 정렬)
             @PageableDefault(size = 15, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         Slice<NotificationDto> notifications = notificationService.getNotifications(currentUserUuid, pageable);

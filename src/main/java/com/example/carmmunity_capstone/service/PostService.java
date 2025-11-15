@@ -49,6 +49,7 @@ public class PostService {
     @Transactional
     public void save( PostRequest postSaveRequest, MultipartFile postImage, MultipartFile thumbnailImage) {
         User user = userService.getAuthenticatedUser();
+        System.out.println("user.getUserUuid() = " + user.getUserUuid());
 
 
         // 게시글 저장
@@ -97,12 +98,12 @@ public class PostService {
                 .orElseThrow(() -> new PostNotFoundException("해당 게시글을 찾을 수 없습니다."));
 
         // 좋아요 여부 확인
-        PostLikeId likeId = new PostLikeId(postId, currentUser.getUserId());
+        PostLikeId likeId = new PostLikeId(postId, currentUser.getUserUuid());
         boolean liked = postLikeRepository.findById(likeId)
                 .map(PostLike::getLikeStatus)
                 .orElse(false);
 
-        boolean isAuthor = post.getUser().getUserId().equals(currentUser.getUserId());
+        boolean isAuthor = post.getUser().getUserUuid().equals(currentUser.getUserUuid());
 
         return new PostSearchResponse(
                 post.getPostId(),
@@ -130,7 +131,7 @@ public class PostService {
         Post post = postRepository.findById(postId).orElseThrow(() -> new PostNotFoundException("해당 게시글을 찾을 수 없습니다"));
 
         // 작성자 본인인지 확인
-        if (!post.getUser().getUserId().equals(user.getUserId())) {
+        if (!post.getUser().getUserUuid().equals(user.getUserUuid())) {
             throw new UnAuthorizedAccessException("작성자만 게시글을 수정할 수 있습니다.");
         }
 
@@ -149,7 +150,7 @@ public class PostService {
         Post post = postRepository.findById(postId).orElseThrow(() -> new PostNotFoundException("해당 게시글을 찾을 수 없습니다."));
 
         // 작성자 본인인지 확인
-        if (!post.getUser().getUserId().equals(user.getUserId())) {
+        if (!post.getUser().getUserUuid().equals(user.getUserUuid())) {
             throw new UnAuthorizedAccessException("작성자만 게시글을 수정할 수 있습니다.");
         }
 
@@ -227,7 +228,7 @@ public class PostService {
             throw new PostNotFoundException("게시글이 존재하지 않습니다.");
         }
 
-        PostLikeId postLikeId = new PostLikeId(postId, user.getUserId());
+        PostLikeId postLikeId = new PostLikeId(postId, user.getUserUuid());
         PostLike postLike = toggleOrCreateLike(postLikeId);
         postLikeRepository.save(postLike);
 

@@ -73,7 +73,7 @@ public class CommentService {
     @Transactional(readOnly = true)
     public Page<CommentSearchResponse> getComments(Integer postId, Integer parentCommentId, int page, int size, CommentOrderBy orderBy, Sort.Direction direction) {
         Optional<User> userOpt = userService.getUserIfAuthenticated();
-        String userId = userOpt.map(User::getUserId).orElse(null);
+        String userUuid = userOpt.map(User::getUserUuid).orElse(null);
 
         Sort sort = Sort.by(direction, orderBy.getField());
         Pageable pageable = PageRequest.of(page, size, sort);
@@ -82,8 +82,8 @@ public class CommentService {
 
         return commentPage.map(comment -> {
             boolean liked = false;
-            if (userId != null) {
-                CommentLikeId id = new CommentLikeId(comment.getCommentId(), userId);
+            if (userUuid != null) {
+                CommentLikeId id = new CommentLikeId(comment.getCommentId(), userUuid);
                 liked = commentLikeRepository.findById(id)
                         .map(CommentLike::getLikeStatus)
                         .orElse(false);
@@ -93,7 +93,7 @@ public class CommentService {
                     comment.getCommentId(),
                     comment.getCommentContent(),
                     comment.getTotalLike(),
-                    userId != null && userId.equals(comment.getUser().getUserId()),
+                    userUuid != null && userUuid.equals(comment.getUser().getUserUuid()),
                     comment.getUser().getNickname(),
                     liked
             );
@@ -112,7 +112,7 @@ public class CommentService {
         Comment comment = commentRepository.findById(commentId).orElseThrow(() -> new CommentNotFoundException("댓글이 존재하지 않습니다."));
 
         // 작성자 본인인지 확인
-        if (!comment.getUser().getUserId().equals(user.getUserId())) {
+        if (!comment.getUser().getUserUuid().equals(user.getUserUuid())) {
             throw new UnAuthorizedAccessException("작성자만 댓글을 수정할 수 있습니다.");
         }
 
@@ -131,7 +131,7 @@ public class CommentService {
         Comment comment = commentRepository.findById(commentId).orElseThrow(() -> new CommentNotFoundException("댓글이 존재하지 않습니다."));
 
         // 작성자 본인인지 확인
-        if (!comment.getUser().getUserId().equals(user.getUserId())) {
+        if (!comment.getUser().getUserUuid().equals(user.getUserUuid())) {
             throw new UnAuthorizedAccessException("작성자만 댓글을 수정할 수 있습니다.");
         }
 
@@ -150,7 +150,7 @@ public class CommentService {
         Comment comment = commentRepository.findByIdForUpdate(commentId)
                 .orElseThrow(() -> new CommentNotFoundException("댓글이 존재하지 않습니다."));
 
-        CommentLikeId commentLikeId = new CommentLikeId(commentId, user.getUserId());
+        CommentLikeId commentLikeId = new CommentLikeId(commentId, user.getUserUuid());
         CommentLike commentLike = toggleOrCreateLike(commentLikeId);
         commentLikeRepository.save(commentLike);
 

@@ -46,7 +46,6 @@ public class WebSocketChatController {
             java.security.Principal principal,
             @Payload WebSocketReadMessageDto wsReadMessage
     ) {
-        System.out.println("wsReadMessage = " + wsReadMessage);
         String readerUuid = principal.getName();
 
         log.info("📚 Read receipt received from user: {}, Message ID: {}", readerUuid, wsReadMessage.getMessageId());

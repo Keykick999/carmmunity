@@ -247,8 +247,8 @@ public class UserService {
     }
 
     public User getAuthenticatedUser() {
-        String userId = getCurrentUserId();
-        return userRepository.findByUserUuid(userId)
+        String userUuid = getCurrentUserId();
+        return userRepository.findById(userUuid)
                 .orElseThrow(() -> new UnauthenticatedUserException("인증된 사용자가 아닙니다."));
     }
 

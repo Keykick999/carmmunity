@@ -45,6 +45,6 @@ public class Post extends BaseEntity {
     private Integer totalLike = 0;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_uuid", referencedColumnName = "user_id", nullable = false)
+    @JoinColumn(name = "user_uuid", referencedColumnName = "user_uuid", nullable = false)
     private User user;
 }

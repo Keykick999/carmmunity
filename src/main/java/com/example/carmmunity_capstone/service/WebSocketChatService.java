@@ -66,8 +66,7 @@ public class WebSocketChatService {
             if (!recipient.getUserUuid().equals(senderUuid)) {
                 log.info("Publishing NewMessageEvent for recipient: {}", recipient.getNickname());
 
-                // 이 이벤트는 @TransactionalEventListener가 수신하여
-                // 트랜잭션이 *커밋된 후* NotificationService에서 알림을 보냅니다.
+                // 트랜잭션이 커밋된 후 NotificationService의 handleMessageEvent에서 알림을 보냅니다.
                 eventPublisher.publishEvent(new NewMessageEvent(
                         sender,
                         recipient,
@@ -99,16 +98,11 @@ public class WebSocketChatService {
      */
     @Transactional
     public void handleReadMessage(String readerUuid, WebSocketReadMessageDto wsReadMessage) {
-
         // 1. 엔티티 조회
         User reader = findUserByUuid(readerUuid);
 
-        // 🚩 [수정] 경합 조건이 해결되었으므로, .isEmpty() 체크를 제거하고 .orElseThrow()로 롤백합니다.
-        // (이제 메시지를 못 찾으면 그건 진짜 예외 상황임)
         ChatMessage message = chatMessageRepository.findById(wsReadMessage.getMessageId())
                 .orElseThrow(() -> new RuntimeException("메시지를 찾을 수 없습니다."));
-
-        ChatRoom room = message.getChatRoom();
 
         // 2. MessageReadStatus에 (messageId, readerId) 저장
         try {
@@ -118,12 +112,11 @@ public class WebSocketChatService {
                     .build();
             messageReadStatusRepository.save(readStatus);
         } catch (Exception e) {
-            // (DataIntegrityViolationException)
-            // 이미 읽음 처리된 메시지이므로, 그냥 무시하고 넘어감
             return;
         }
 
-        // 3. [갱신된 안 읽은 수 계산]
+        // 3. [갱신된 안 읽은 수 계산] : 총 참여자 - 메시지 읽은 사람 수
+        ChatRoom room = message.getChatRoom();
         long totalParticipants = chatParticipantRepository.countByChatRoom(room);
         long readCount = messageReadStatusRepository.countByChatMessage(message);
         long unreadCount = totalParticipants - readCount;

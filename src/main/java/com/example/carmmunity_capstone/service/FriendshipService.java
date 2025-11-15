@@ -22,9 +22,6 @@ public class FriendshipService {
 
     private final ApplicationEventPublisher eventPublisher;
 
-    // 2. SimpMessagingTemplate 주입 (RequiredArgsConstructor가 처리)
-    private final NotificationService notificationService;
-
     private final FriendshipRepository friendshipRepository;
     private final UserRepository userRepository;
     private final ChatService chatService;
@@ -65,7 +62,7 @@ public class FriendshipService {
                 friendship.setStatus(newStatus);
                 friendshipRepository.save(friendship);
 
-                // --- [수정] 알림 로직 -> 이벤트 발행 ---
+                // 알림 로직 -> 이벤트 발행
                 String message;
                 NotificationType type;
 
@@ -77,10 +74,8 @@ public class FriendshipService {
                     type = NotificationType.NEW_FOLLOWER;
                 }
 
-                // [수정] NotificationService 직접 호출 대신 이벤트 발행
+                // NotificationService의 handleFollowEvent에서 처리
                 eventPublisher.publishEvent(new FollowEvent(follower, followee, message, type));
-                // --- 알림 로직 끝 ---
-
                 break;
             case BLOCKED:
                 throw new RuntimeException("차단한 사용자입니다.");
