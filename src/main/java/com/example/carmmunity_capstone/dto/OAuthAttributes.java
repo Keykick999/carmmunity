@@ -3,12 +3,14 @@ package com.example.carmmunity_capstone.dto;// com/example/carmmunity_capstone/d
 import com.example.carmmunity_capstone.entity.User;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.ToString;
 
 import java.util.Map;
 import java.util.UUID;
 
 @Getter
 @Builder
+@ToString
 public class OAuthAttributes {
     private Map<String, Object> attributes;
     private String nameAttributeKey;
@@ -34,7 +36,7 @@ public class OAuthAttributes {
                 .email((String) attributes.get("email"))
                 .picture((String) attributes.get("picture"))
                 .provider("google")
-                .providerId((String) attributes.get(userNameAttributeName))
+                .providerId((String) attributes.get("sub"))
                 .attributes(attributes)
                 .nameAttributeKey(userNameAttributeName)
                 .build();

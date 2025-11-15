@@ -374,11 +374,16 @@ function updateFriendMessageBadge(friendUuid, count) {
  * [수정] 모든 알림 소스를 다시 계산하여 헤더/모달 배지를 업데이트합니다.
  * (헤더 배지와 알림 탭 배지를 분리)
  */
+/**
+ * [수정] 모든 알림 소스를 다시 계산하여 헤더/모달 배지를 업데이트합니다.
+ * (헤더 배지와 알림 탭 배지를 분리)
+ */
 function updateNotificationBadge() {
     // 1. 소스 (A): "받은 요청" 수
     const followRequestCount = receivedRequestsData ? receivedRequestsData.length : 0;
 
     // 2. 소스 (B): "총 안 읽은 메시지" 수
+    // (이 변수는 '친구 목록' 탭의 배지를 위해 계산하지만, 헤더 총합에는 사용하지 않습니다.)
     let totalUnreadMessages = 0;
     for (const uuid in unreadMessageCounts) {
         totalUnreadMessages += unreadMessageCounts[uuid];
@@ -387,14 +392,18 @@ function updateNotificationBadge() {
     // 3. 소스 (C): "기타 알림" (팔로우 수락, 새 팔로워)
     const infoAlertCount = unreadInfoCount;
 
-    // 4. 총합 계산 (헤더 배지용)
+    // 4. [수정] 총합 계산 (헤더 배지용)
+    // 🚩 헤더 배지는 (A) 받은 요청 + (C) 기타 알림만 포함합니다.
+    // 🚩 (B) 총 안 읽은 메시지(totalUnreadMessages)는 여기서 제외합니다.
     notificationCount = followRequestCount + infoAlertCount;
+    console.log(followRequestCount);
+    console.log(infoAlertCount);
 
     // --- UI 업데이트 ---
     const headerBadge = document.getElementById('notificationBadge');
-    const modalBadge = document.getElementById('notificationModalBadge');
+    const modalBadge = document.getElementById('notificationModalBadge'); // '알림' 탭 배지
 
-    // 5. [수정] 헤더 배지 업데이트 (총합 A+B+C)
+    // 5. 헤더 배지 업데이트 (총합 A+C)
     const totalCountText = notificationCount.toString();
     const showTotal = notificationCount > 0;
     if (headerBadge) {
@@ -402,7 +411,8 @@ function updateNotificationBadge() {
         showTotal ? headerBadge.classList.remove('d-none') : headerBadge.classList.add('d-none');
     }
 
-    // 6. [수정] "알림" 탭 배지 업데이트 (C만)
+    // 6. '알림' 탭 배지 업데이트 (C만)
+    // (이 로직은 기존과 동일하게 유지)
     const infoCountText = infoAlertCount.toString();
     const showInfo = infoAlertCount > 0;
     if (modalBadge) {
@@ -410,6 +420,7 @@ function updateNotificationBadge() {
         showInfo ? modalBadge.classList.remove('d-none') : modalBadge.classList.add('d-none');
     }
 }
+
 
 /**
  * [신규] '알림' 탭을 렌더링하는 함수

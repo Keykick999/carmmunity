@@ -231,7 +231,7 @@ public class FriendshipService {
     @Transactional(readOnly = true)
     public List<UserSummaryDto> getFollowingList(String currentUserUuid, String targetUserUuid) {
 
-        // [수정됨] 현재 로그인한 유저를 찾습니다. (안 읽음 카운트 조회의 주체)
+        // 현재 로그인한 유저를 찾습니다. (안 읽음 카운트 조회의 주체)
         User currentUser = findUserByUuid(currentUserUuid);
 
         User targetUser = findUserByUuid(targetUserUuid);

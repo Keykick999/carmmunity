@@ -319,7 +319,7 @@ public class ChatService {
         User user1;
         User user2;
 
-        if (currentUser.getUserId().compareTo(friendUser.getUserId()) < 0) {
+        if (currentUser.getUserUuid().compareTo(friendUser.getUserUuid()) < 0) {
             user1 = currentUser;
             user2 = friendUser;
         } else {
@@ -345,7 +345,7 @@ public class ChatService {
         // (currentUser의 String userId를 쿼리에 전달)
         int unreadCount = chatMessageRepository.countUnreadMessagesForUserInRoom(
                 room.getChatRoomId(),
-                currentUser.getUserId()
+                currentUser.getUserUuid()
         );
 
         return unreadCount;

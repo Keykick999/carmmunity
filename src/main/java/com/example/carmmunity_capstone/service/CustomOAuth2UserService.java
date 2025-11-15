@@ -29,7 +29,7 @@ import java.util.Optional;
 public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
 
     private final UserRepository userRepository;
-    private final UserProviderRepository userProviderRepository; // 💡 [필수] 신규 레포지토리
+    private final UserProviderRepository userProviderRepository;
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
@@ -54,8 +54,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         if (linkedProvider.isPresent()) {
             // 🚩 Case 1: 연동된 유저 발견 (가장 깔끔한 성공, 이메일 유무 상관 없음)
             user = linkedProvider.get().getUser(); // FK를 통해 코어 User 객체 획득
-            user = attributes.update(user); // 프로필 업데이트
-
+//            user = attributes.update(user); // 프로필 업데이트
         } else if (attributes.getEmail() != null) {
             // 🚩 Case 2: Provider 연동은 없지만, 이메일은 제공됨. (계정 통합 및 신규 가입 플로우)
 

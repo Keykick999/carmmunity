@@ -2,7 +2,6 @@ package com.example.carmmunity_capstone.config;
 
 import com.example.carmmunity_capstone.dto.OAuthAttributes;
 import com.example.carmmunity_capstone.entity.User;
-import com.example.carmmunity_capstone.entity.UserProvider;
 import com.example.carmmunity_capstone.repository.UserProviderRepository;
 import com.example.carmmunity_capstone.repository.UserRepository;
 import jakarta.servlet.ServletException;
@@ -32,7 +31,6 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
         // 1. Principal에서 Provider ID (Social ID)와 Provider 이름(kakao, naver)을 추출합니다.
-        //    * authentication.getName()은 Social ID (e.g., Kakao user ID)를 반환합니다.
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
         OAuth2AuthenticationToken authToken = (OAuth2AuthenticationToken) authentication;
 

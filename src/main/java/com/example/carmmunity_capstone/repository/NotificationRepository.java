@@ -10,6 +10,8 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
+
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
     /**
@@ -44,9 +46,9 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     @Query("UPDATE Notification n SET n.isRead = true WHERE n.recipient = :recipient AND n.isRead = false")
     void markAllAsReadByRecipient(@Param("recipient") User recipient);
 
-    Slice<Notification> findByRecipientAndTypeNot(User recipient, NotificationType type, Pageable pageable);
+    Slice<Notification> findByRecipientAndTypeNotIn(User recipient, Collection<NotificationType> types, Pageable pageable);
 
-    int countByRecipientAndIsReadFalseAndTypeNot(User recipient, NotificationType type);
+    int countByRecipientAndIsReadFalseAndTypeNotIn(User recipient, Collection<NotificationType> types);
 
     @Modifying
     @Query("UPDATE Notification n SET n.isRead = true WHERE n.recipient = :recipient AND n.isRead = false AND n.type != :type")

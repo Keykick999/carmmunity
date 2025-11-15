@@ -19,6 +19,8 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.transaction.annotation.Propagation;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -147,10 +149,16 @@ public class NotificationService {
     public int getUnreadNotificationCount(String userUuid) {
         User user = findUserByUuid(userUuid);
 
-        // "팔로우 요청"은 별도 탭으로 관리하므로, '기타 알림' 카운트에서는 제외
-        return notificationRepository.countByRecipientAndIsReadFalseAndTypeNot(
+        // 1. 제외할 알림 타입 목록을 생성
+        List<NotificationType> excludedTypes = List.of(
+                NotificationType.FOLLOW_REQUEST, // "팔로우 요청" 제외
+                NotificationType.NEW_MESSAGE     // "새 메시지" 제외
+        );
+
+        // 2. NotIn 메서드 호출
+        return notificationRepository.countByRecipientAndIsReadFalseAndTypeNotIn(
                 user,
-                NotificationType.FOLLOW_REQUEST
+                excludedTypes
         );
     }
 
@@ -162,12 +170,20 @@ public class NotificationService {
     public Slice<NotificationDto> getNotifications(String userUuid, Pageable pageable) {
         User user = findUserByUuid(userUuid);
 
-        // "팔로우 요청"은 별도 탭으로 관리하므로, '알림 목록'에서는 제외
-        Slice<Notification> notifications = notificationRepository.findByRecipientAndTypeNot(
-                user,
+        // 제외할 알림 타입들
+        List<NotificationType> excludedTypes = List.of(
                 NotificationType.FOLLOW_REQUEST,
+                NotificationType.NEW_MESSAGE
+        );
+
+        // "팔로우 요청"은 별도 탭으로 관리하므로, '알림 목록'에서는 제외
+        Slice<Notification> notifications = notificationRepository.findByRecipientAndTypeNotIn(
+                user,
+                excludedTypes,
                 pageable
         );
+
+        System.out.println("notifications = " + notifications);
 
         // DB 엔티티(Notification)를 클라이언트 DTO(NotificationDto)로 변환하여 반환
         return notifications.map(NotificationDto::from);

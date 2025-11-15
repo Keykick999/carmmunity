@@ -33,7 +33,6 @@ public class WebSocketChatService {
      */
     @Transactional
     public void handleSendMessage(String senderUuid, WebSocketMessageDto wsMessage) {
-
         // 1. 엔티티 조회
         User sender = findUserByUuid(senderUuid);
         ChatRoom room = findRoomById(wsMessage.getRoomId());
