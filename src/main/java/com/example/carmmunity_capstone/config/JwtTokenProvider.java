@@ -7,7 +7,7 @@ import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import java.security.Key;
+import javax.crypto.SecretKey;
 import java.util.Date;
 
 @Component
@@ -16,26 +16,39 @@ public class JwtTokenProvider {
     @Value("${spring.jwt.secret}")
     private String secretKey;
 
-    @Value("${spring.jwt.expiration}")
-    private long expiration;
+    @Value("${spring.jwt.access-exp-ms}")
+    private Date accessExpTime;
 
-    private Key key;
+    @Value("${spring.jwt.refresh-exp-ms}")
+    private Date refreshExpTime;
+
+    private SecretKey key;
 
     //시크릿 키 초기화
     @PostConstruct
-    protected void init() {
+    protected void init(@Value("${spring.jwt.secret}") String secretKey,
+                        @Value("${spring.jwt.access-exp-ms}") long accessExpMs,
+                        @Value("${spring.jw.refresh-exp-ms}") long refreshExpMs) {
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes());
+        this.accessExpTime = new Date(System.currentTimeMillis() + accessExpMs);
+        this.refreshExpTime = new Date(System.currentTimeMillis() + refreshExpMs);
     }
 
     // JWT 토큰 생성
-    public String createToken(String userId) {
-        Date now = new Date();
-        Date expiry = new Date(now.getTime() + expiration);
-
+    public String createAccessToken(String userId) {
         return Jwts.builder()
                 .setSubject(userId)
-                .setIssuedAt(now)
-                .setExpiration(expiry)  // 유효 시간 설정
+                .setIssuedAt(new Date())
+                .setExpiration(accessExpTime)
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public String createRefreshToken(String userId) {
+        return Jwts.builder()
+                .setSubject(userId)
+                .setIssuedAt(new Date())
+                .setExpiration(refreshExpTime)
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -53,7 +66,10 @@ public class JwtTokenProvider {
     // JWT 유효성 검증
     public boolean validateToken(String token) {
         try {
-            Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
+            Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             return false;

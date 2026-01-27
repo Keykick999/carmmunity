@@ -1,14 +1,13 @@
 package com.example.carmmunity_capstone.service;
 
 import com.example.carmmunity_capstone.dto.FollowEvent;
-import com.example.carmmunity_capstone.dto.NotificationDto; // DTO 임포트
 import com.example.carmmunity_capstone.dto.UserSummaryDto;
 import com.example.carmmunity_capstone.entity.*;
 import com.example.carmmunity_capstone.repository.FriendshipRepository;
+import com.example.carmmunity_capstone.repository.NotificationRepository;
 import com.example.carmmunity_capstone.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j; // Log 임포트
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
@@ -20,10 +19,9 @@ import java.util.stream.Collectors;
 @Slf4j // 1. 로그 추가
 public class FriendshipService {
 
-    private final ApplicationEventPublisher eventPublisher;
-
     private final FriendshipRepository friendshipRepository;
     private final UserRepository userRepository;
+    private final NotificationRepository notificationRepository;
     private final ChatService chatService;
 
     /**
@@ -74,8 +72,16 @@ public class FriendshipService {
                     type = NotificationType.NEW_FOLLOWER;
                 }
 
-                // NotificationService의 handleFollowEvent에서 처리
-                eventPublisher.publishEvent(new FollowEvent(follower, followee, message, type));
+                // 알림 데이터 DB에 저장
+                Notification newNotification = Notification.builder()
+                        .recipient(followee)
+                        .sender(follower)
+                        .type(type)
+                        .status(NotificationStatus.PENDING)
+                        .message(message)
+                        .build();
+
+                notificationRepository.save(newNotification);
                 break;
             case BLOCKED:
                 throw new RuntimeException("차단한 사용자입니다.");
@@ -115,18 +121,20 @@ public class FriendshipService {
         request.setStatus(FriendshipStatus.FOLLOWING);
         friendshipRepository.save(request);
 
-        // --- [수정] 알림 로직 -> 이벤트 발행 ---
+        // 알림 로직 -> 이벤트 발행 ---
         String message = receiver.getNickname() + "님이 팔로우 요청을 수락했습니다.";
+        NotificationType notificationType = NotificationType.FOLLOW_ACCEPTED;
 
-        // [수정] NotificationService 직접 호출 대신 이벤트 발행
-        // (알림 유발자: receiver, 알림 수신자: requester)
-        eventPublisher.publishEvent(new FollowEvent(
-                receiver,
-                requester,
-                message,
-                NotificationType.FOLLOW_ACCEPTED
-        ));
-        // --- 알림 로직 끝 ---
+        // 알림 데이터 DB에 저장
+        Notification newNotification = Notification.builder()
+                .recipient(requester)
+                .sender(receiver)
+                .type(notificationType)
+                .status(NotificationStatus.PENDING)
+                .message(message)
+                .build();
+
+        notificationRepository.save(newNotification);
     }
 
     /**

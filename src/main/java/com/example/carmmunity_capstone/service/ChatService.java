@@ -185,18 +185,18 @@ public class ChatService {
             return;
         }
 
-        // 3. 🚩 [수정] saveAll을 하기 *전에* 방송할 이벤트 목록을 미리 생성
+        // 3. saveAll을 하기 전에 방송할 이벤트 목록을 미리 생성
         long totalParticipants = chatParticipantRepository.countByChatRoom(room);
         List<MessageReadStatus> newReadStatuses = new ArrayList<>();
         List<MessageReadEventDto> readEventsToBroadcast = new ArrayList<>();
 
         for (ChatMessage message : unreadMessages) {
 
-            // [수정] (Query BEFORE Save) 현재 읽은 사람 수를 먼저 조회
+            // 현재 읽은 사람 수를 먼저 조회
             long currentReadCount = messageReadStatusRepository.countByChatMessage(message);
             long currentUnreadCount = totalParticipants - currentReadCount;
 
-            // [수정] 이 유저(currentUser)가 읽으면 1이 줄어듦
+            // 이 유저(currentUser)가 읽으면 1이 줄어듦
             long newUnreadCount = currentUnreadCount - 1;
 
             // (1) DB 저장 준비
@@ -216,7 +216,7 @@ public class ChatService {
         // 4. DB에 일괄 저장 (Batch Insert)
         messageReadStatusRepository.saveAll(newReadStatuses);
 
-        // 5. 🚩 [수정] 트랜잭션 커밋 *이후*에 방송하도록 등록
+        // 5. 트랜잭션 커밋 이후에 방송하도록 등록
         // (handleSendMessage와 동일한 이유로, 트랜잭션 동기화 사용)
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override

@@ -1,16 +1,19 @@
 package com.example.carmmunity_capstone.repository;
 
 import com.example.carmmunity_capstone.entity.Notification;
+import com.example.carmmunity_capstone.entity.NotificationStatus;
 import com.example.carmmunity_capstone.entity.NotificationType;
 import com.example.carmmunity_capstone.entity.User;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.QueryHint;
 import org.springframework.data.domain.Pageable; // [추가] 페이징
 import org.springframework.data.domain.Slice; // [추가] 페이징
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.List;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
@@ -53,4 +56,25 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     @Modifying
     @Query("UPDATE Notification n SET n.isRead = true WHERE n.recipient = :recipient AND n.isRead = false AND n.type != :type")
     void markAllAsReadByRecipientAndTypeNot(@Param("recipient") User recipient, @Param("type") NotificationType type);
+
+    /**
+     * PENDING 상태인 알림을 비관적 락을 걸어서 가져옵니다.
+     * SKIP LOCKED 설정을 통해 이미 다른 쓰레드가 락을 건 행은 무시하고 지나갑니다.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE) // DB 수준에서 SELECT ... FOR UPDATE 적용
+    @QueryHints({
+            @QueryHint(name = "jakarta.persistence.lock.timeout", value = "-2") // -2는 'SKIP LOCKED'를 의미 (PostgreSQL/Oracle/MySQL 8.0+)
+    })
+    @Query("SELECT n FROM Notification n WHERE n.status = 'PENDING' ORDER BY n.createdAt ASC")
+    List<Notification> findPendingNotificationsForProcessing(Pageable pageable);
+
+    // 24시간 동안 안 읽은(SENT 상태) 알림 찾기
+    List<Notification> findByStatusAndIsReadFalseAndCreatedAtBefore(
+            NotificationStatus status, LocalDateTime dateTime);
+
+    // 특정 사용자의 모든 알림을 한 번에 읽음 처리
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE Notification n SET n.isRead = true " +
+            "WHERE n.recipient = :user AND n.isRead = false")
+    int markAllAsRead(@Param("user") User user);
 }

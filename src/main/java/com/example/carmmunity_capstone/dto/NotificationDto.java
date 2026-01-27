@@ -11,27 +11,27 @@ import java.time.LocalDateTime;
 @Builder
 public class NotificationDto {
 
-    // [신규] DB 엔티티의 ID
+    // DB 엔티티의 ID
     private Long notificationId;
 
-    // (기존) 알림 유형
+    // 알림 유형
     private NotificationType type;
 
-    // (기존) 알림 발생시킨 사용자 정보
+    // 알림 발생시킨 사용자 정보
     private String senderUserUuid;
     private String senderNickname;
     private String senderProfileImage;
 
-    // (기존) 메시지 본문
+    // 메시지 본문
     private String message;
 
-    // (기존) 메시지 알림용 채팅방 ID
+    // 메시지 알림용 채팅방 ID
     private String roomId;
 
-    // [신규] 읽음 여부
+    // 읽음 여부
     private boolean isRead;
 
-    // [신규] 알림 발생 시간
+    // 알림 발생 시간
     private LocalDateTime createdAt;
 
     // --- (기존 Enum 정의는 삭제됨) ---
@@ -54,7 +54,7 @@ public class NotificationDto {
                 .senderProfileImage(senderProfileImage)
                 .message(notification.getMessage())
                 // .roomId(notification.getRelatedRoomId()) // (만약 엔티티에 roomId를 저장한다면)
-                .isRead(notification.isRead())
+                    .isRead(notification.isRead())
                 .createdAt(notification.getCreatedAt())
                 .build();
     }

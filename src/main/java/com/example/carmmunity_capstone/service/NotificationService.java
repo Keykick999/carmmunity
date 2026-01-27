@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
@@ -40,83 +41,72 @@ public class NotificationService {
      * [성공적으로 커밋(Commit)된 후에만] 이 메서드가 호출됩니다.
      * 이것이 '유령 알림'을 완벽하게 방지하는 핵심입니다.
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handleFollowEvent(FollowEvent event) {
-        log.info("트랜잭션 커밋 완료, 팔로우 이벤트 수신. 알림 전송 시작.");
+//    @Transactional(propagation = Propagation.REQUIRES_NEW)
+//    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+//    public void handleFollowEvent(FollowEvent followEvent) {
+//        log.info("트랜잭션 커밋 완료, 팔로우 이벤트 수신. 알림 전송 시작.");
+//
+//        User sender = followEvent.getSender();
+//        User receiver = followEvent.getReceiver();
+//
+//        // 수신자 유효성 검사 (알림 유발자와 수신자가 같은 경우 등)
+//        if (receiver == null || sender.getUserUuid().equals(receiver.getUserUuid())) {
+//            log.warn("알림 수신자가 유효하지 않습니다. (Sender: {}, Receiver: {})", sender.getUserUuid(), receiver != null ? receiver.getUserUuid() : "null");
+//            return;
+//        }
+//
+//        log.info("팔로우 이벤트 수신 (DB 저장 및 전송): {} -> {}", sender.getNickname(), receiver.getNickname());
+//
+//        // 4. 실시간 전송 DTO 생성 (DB 엔티티 기반)
+//        // (NotificationDto.from 정적 메서드 사용)
+//        NotificationDto notificationDto = NotificationDto.builder()
+//                .notificationId(followEvent.getNotificationId())
+//                .type(followEvent.getType())
+//                .senderUserUuid(sender.getUserUuid())
+//                .senderNickname(sender.getNickname())
+//                .senderProfileImage(sender.getProfileImagePath())
+//                .message(followEvent.getMessage())
+//                .isRead(false)
+//                .createdAt(followEvent.getCreatedAt())
+//                .build();
+//
+//        // 5. 클라이언트로 실제 알림 전송
+//        sendNotification(receiver, notificationDto);
+//    }
+//
+//    @Transactional(propagation = Propagation.REQUIRES_NEW)
+//    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+//    public void handleMessageEvent(NewMessageEvent event) {
+//        // 유효성 검사
+//        User sender = event.getSender();
+//        User recipient = event.getRecipient();
+//
+//        if (recipient == null || sender.getUserUuid().equals(recipient.getUserUuid())) {
+//            log.warn("메시지 알림 수신자가 유효하지 않습니다. (Sender: {}, Receiver: {})", sender.getUserUuid(), recipient != null ? recipient.getUserUuid() : "null");
+//            return;
+//        }
+//
+//        log.info("메시지 이벤트 수신 (DB 저장 및 전송): {} -> {}", event.getSender().getNickname(), event.getRecipient().getNickname());
+//
+//        // 실시간 전송을 위한 DTO 생성
+//        NotificationDto notificationDto = NotificationDto.builder()
+//                .notificationId(event.getNotificationId())
+//                .type(event.getType())
+//                .senderUserUuid(sender.getUserUuid())
+//                .senderNickname(sender.getNickname())
+//                .senderProfileImage(sender.getProfileImagePath())
+//                .message(event.getMessage())
+//                .isRead(false)
+//                .createdAt(event.getCreatedAt())
+//                .roomId(event.getRoomId())
+//                .build();
+//
+//        // 4. 클라이언트로 실제 알림 전송
+//        sendNotification(event.getRecipient(), notificationDto);
+//    }
 
-        User sender = event.getSender();
-        User receiver = event.getReceiver();
 
-        // 수신자 유효성 검사 (알림 유발자와 수신자가 같은 경우 등)
-        if (receiver == null || sender.getUserUuid().equals(receiver.getUserUuid())) {
-            log.warn("알림 수신자가 유효하지 않습니다. (Sender: {}, Receiver: {})", sender.getUserUuid(), receiver != null ? receiver.getUserUuid() : "null");
-            return;
-        }
-
-        log.info("팔로우 이벤트 수신 (DB 저장 및 전송): {} -> {}", sender.getNickname(), receiver.getNickname());
-
-
-        // 2. 알림 엔티티 생성 (DB 저장용)
-        Notification newNotification = Notification.builder()
-                .recipient(receiver)
-                .sender(sender)
-                .type(event.getType())
-                .message(event.getMessage())
-                .build();
-
-        // 3. 알림을 DB에 저장
-        Notification savedNotification = notificationRepository.save(newNotification);
-
-        // 4. 실시간 전송 DTO 생성 (DB 엔티티 기반)
-        // (NotificationDto.from 정적 메서드 사용)
-        NotificationDto notificationDto = NotificationDto.from(savedNotification);
-
-        // 5. 클라이언트로 실제 알림 전송
-        sendNotification(receiver, notificationDto);
-    }
-
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handleMessageEvent(NewMessageEvent event) {
-        // 유효성 검사
-        User sender = event.getSender();
-        User recipient = event.getRecipient();
-
-        if (recipient == null || sender.getUserUuid().equals(recipient.getUserUuid())) {
-            log.warn("메시지 알림 수신자가 유효하지 않습니다. (Sender: {}, Receiver: {})", sender.getUserUuid(), recipient != null ? recipient.getUserUuid() : "null");
-            return;
-        }
-
-        log.info("메시지 이벤트 수신 (DB 저장 및 전송): {} -> {}", event.getSender().getNickname(), event.getRecipient().getNickname());
-
-        // 알림 엔티티 생성 (DB에 저장하기 위해)
-        Notification newNotification = Notification.builder()
-                .recipient(event.getRecipient())
-                .sender(event.getSender())
-                .type(NotificationType.NEW_MESSAGE)
-                .message("새로운 메시지가 도착했습니다.")
-                .build();
-
-        // 알림을 DB에 저장
-        Notification savedNotification = notificationRepository.save(newNotification);
-
-        // 실시간 전송을 위한 DTO 생성
-        NotificationDto notificationDto = NotificationDto.builder()
-                .notificationId(savedNotification.getNotificationId())
-                .type(savedNotification.getType())
-                .senderUserUuid(savedNotification.getSender().getUserUuid())
-                .senderNickname(savedNotification.getSender().getNickname())
-                .senderProfileImage(savedNotification.getSender().getProfileImagePath())
-                .message(savedNotification.getMessage())
-                .isRead(savedNotification.isRead())
-                .createdAt(savedNotification.getCreatedAt())
-                .roomId(event.getRoomId())
-                .build();
-
-        // 4. 클라이언트로 실제 알림 전송
-        sendNotification(event.getRecipient(), notificationDto);
-    }
+    @Scheduled(fixedDelay = 1000)
 
     private void sendNotification(User receiver, NotificationDto dto) {
         // 1. 수신자 null 체크 (필수)

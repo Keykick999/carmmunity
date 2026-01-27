@@ -1,12 +1,12 @@
 package com.example.carmmunity_capstone.entity;
 
-import com.example.carmmunity_capstone.entity.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EntityListeners(AuditingEntityListener.class)
 public class Notification {
 
     @Id
@@ -42,4 +43,25 @@ public class Notification {
 
     @CreatedDate
     private LocalDateTime createdAt;
+
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private NotificationStatus status = NotificationStatus.PENDING;
+
+    @Builder.Default
+    private int retryCount = 0;
+
+    private LocalDateTime sentAt; // 실제 발송 성공 시각
+
+    public void markAsSent() {
+        this.status = NotificationStatus.SENT;
+    }
+
+    public void incrementRetryCount() {
+        this.retryCount++;
+    }
+
+    public void markAsFailed() {
+        this.status = NotificationStatus.FAILED;
+    }
 }

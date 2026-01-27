@@ -21,7 +21,10 @@ public enum ErrorCode {
     COMMENT_LIKE_NOT_FOUND(HttpStatus.NOT_FOUND, "좋아요한 댓글을 찾을 수 없습니다."),
 
     // 이메일 에러
-    EMAIL_DUPLICATE_FOR_LINKING(HttpStatus.CONFLICT, "입력하신 이메일은 이미 등록된 계정입니다. 연동을 진행해주세요.");
+    EMAIL_DUPLICATE_FOR_LINKING(HttpStatus.CONFLICT, "입력하신 이메일은 이미 등록된 계정입니다. 연동을 진행해주세요."),
+
+    // 알림
+    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 알림입니다.");
 
     private final HttpStatus status;
     private final String message;

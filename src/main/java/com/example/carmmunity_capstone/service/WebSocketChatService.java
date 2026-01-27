@@ -24,8 +24,8 @@ public class WebSocketChatService {
     private final ChatMessageRepository chatMessageRepository;
     private final ChatParticipantRepository chatParticipantRepository;
     private final MessageReadStatusRepository messageReadStatusRepository;
+    private final NotificationRepository notificationRepository;
     private final SimpMessagingTemplate messagingTemplate;
-    private final ApplicationEventPublisher eventPublisher; // [신규]
 
 
     /**
@@ -66,12 +66,20 @@ public class WebSocketChatService {
             if (!recipient.getUserUuid().equals(senderUuid)) {
                 log.info("Publishing NewMessageEvent for recipient: {}", recipient.getNickname());
 
-                // 트랜잭션이 커밋된 후 NotificationService의 handleMessageEvent에서 알림을 보냅니다.
-                eventPublisher.publishEvent(new NewMessageEvent(
-                        sender,
-                        recipient,
-                        room.getChatRoomId().toString() // (roomId는 Long/String 타입에 맞게 전달)
-                ));
+                // 알림 엔티티 생성 (DB에 저장하기 위해)
+                String message = "새로운 메시지가 도착했습니다.";
+                NotificationType notificationType = NotificationType.NEW_MESSAGE;
+
+                Notification newNotification = Notification.builder()
+                        .recipient(recipient)
+                        .sender(sender)
+                        .type(notificationType)
+                        .status(NotificationStatus.PENDING)
+                        .message(message)
+                        .build();
+
+                // 알림을 DB에 저장
+                notificationRepository.save(newNotification);
             }
         }
 

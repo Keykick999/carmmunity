@@ -3,7 +3,6 @@ package com.example.carmmunity_capstone.config;
 import com.example.carmmunity_capstone.dto.OAuthAttributes;
 import com.example.carmmunity_capstone.entity.User;
 import com.example.carmmunity_capstone.repository.UserProviderRepository;
-import com.example.carmmunity_capstone.repository.UserRepository;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -14,16 +13,15 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+
 
 @Component
 @RequiredArgsConstructor
 public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final JwtTokenProvider jwtTokenProvider;
-    private final UserRepository userRepository;
     private final UserProviderRepository userProviderRepository;
 
     private final String FRONTEND_CALLBACK_URL = "http://localhost:8080/oauth/callback";
